@@ -135,7 +135,9 @@ public class PFDMainActivity extends EFISMainActivity implements Listener, Senso
         // Create a GLSurfaceView instance and set it
         // as the ContentView for this Activity
         mGLView = new PFDSurfaceView(this);
-        setContentView(mGLView);
+
+        //setContentView(mGLView);
+        /*
 
         // Get the version number of the app
         PackageInfo pInfo = null;
@@ -203,6 +205,7 @@ public class PFDMainActivity extends EFISMainActivity implements Listener, Senso
         // based on availability
         mGLView.setServiceableDevice();
         updateEFIS();
+        */
 
     }
 
@@ -271,7 +274,7 @@ public class PFDMainActivity extends EFISMainActivity implements Listener, Senso
         // consume significant memory here.
 
         releaseMediaPlayer();
-        mGLView.onPause();
+        //mGLView.onPause();
 
         //mStratux.stop();
 		
@@ -290,7 +293,7 @@ public class PFDMainActivity extends EFISMainActivity implements Listener, Senso
         // If you de-allocated graphic objects for onPause()
         // this is a good place to re-allocate them.
         createMediaPlayer();
-        mGLView.onResume();
+        //mGLView.onResume();
 
         //mStratux.start();
 
@@ -557,9 +560,9 @@ public class PFDMainActivity extends EFISMainActivity implements Listener, Senso
             colorTheme = _colorTheme;
             savePersistentSettings();
             mGLView = new PFDSurfaceView(this);
-            setContentView(mGLView);
+            //setContentView(mGLView);
             mGLView.setTheme(colorTheme);
-            mGLView.invalidate();
+            //mGLView.invalidate();
             restorePersistentSettings();
             mGLView.setServiceableDevice();
         }

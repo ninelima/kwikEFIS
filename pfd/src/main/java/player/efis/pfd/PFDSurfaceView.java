@@ -19,6 +19,7 @@ package player.efis.pfd;
 import android.content.Context;
 import android.opengl.GLSurfaceView;
 import android.view.MotionEvent;
+import android.view.SurfaceView;
 import android.widget.Toast;
 
 import player.efis.common.StratuxWiFiTask;
@@ -30,13 +31,13 @@ import player.efis.common.prefs_t;
 // This view can also be used to capture touch events, such as a user
 // interacting with drawn objects.
 //
-public class PFDSurfaceView extends GLSurfaceView
+public class PFDSurfaceView extends SurfaceView /*GLSurfaceView*/
 {
 
     //private final PFDRenderer mRenderer;
-    public final PFDRenderer mRenderer;  // normally this would be private but we want to access the sel wpt from main activity
+    public final PFDRenderer mRenderer = null;  // normally this would be private but we want to access the sel wpt from main activity
 
-    public PFDSurfaceView(Context context)
+    /*public PFDSurfaceView(Context context)
     {
         super(context);
 
@@ -49,12 +50,23 @@ public class PFDSurfaceView extends GLSurfaceView
 
         // Render the view only when there is a change in the drawing data
         setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
-    }
+    }*/
 
     //private final float TOUCH_SCALE_FACTOR = 180.0f / 320;
     private float mPreviousX;
     private float mPreviousY;
     private static final int MIN_DISTANCE = 150;
+
+    public PFDSurfaceView(Context context)
+    {
+        super(context);
+    }
+
+
+    void requestRender()
+    {
+
+    }
 
     @Override
     public boolean onTouchEvent(MotionEvent e)
