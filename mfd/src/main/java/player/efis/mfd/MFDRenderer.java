@@ -116,8 +116,8 @@ public class MFDRenderer extends EFISRenderer implements GLSurfaceView.Renderer
         }
 
         if (displayAirspace) renderAirspace(mMVPMatrix);
-        if (displayAirport) renderAPT(mMVPMatrix);  // must be on the same matrix as the Pitch
-        if (displayAirport) renderACT(mMVPMatrix);  // must be on the same matrix as the Pitch
+        //if (displayAirport) renderAPT(mMVPMatrix);  // must be on the same matrix as the Pitch
+        //if (displayAirport) renderACT(mMVPMatrix);  // must be on the same matrix as the Pitch
 
         //-----------------------------
         if (displayFlightDirector) {

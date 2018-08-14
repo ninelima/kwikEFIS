@@ -211,15 +211,17 @@ public class MFDMainActivity extends EFISMainActivity implements Listener, Senso
         if (mGLView.mRenderer.mAltSelName.length() != 5) mGLView.mRenderer.mWptSelName = "00000";
 
         // Instantiate a new apts gpx/xml
-        mGpx = new Gpx(this);
-        mDemGTOPO30 = new DemGTOPO30(this);
+        //mGpx = new Gpx(this);
+        //mDemGTOPO30 = new DemGTOPO30(this);
         mAirspace = new OpenAir(this);
         mGLView.setTheme(colorTheme);
 
+        /*
         // Wifi
         connectWiFi("stratux");
         mStratux = new StratuxWiFiTask("mfd");
         mStratux.execute();
+        */
 
         // Overall the device is now ready.
         // The individual elements will be enabled or disabled by the location provided
@@ -233,8 +235,8 @@ public class MFDMainActivity extends EFISMainActivity implements Listener, Senso
     @Override
     protected void onStop()
     {
-        mStratux.stop();
-        mStratux.cancel(true);
+        //mStratux.stop();
+        //mStratux.cancel(true);
         savePersistentSettings();
         super.onStop();
     }
@@ -259,9 +261,10 @@ public class MFDMainActivity extends EFISMainActivity implements Listener, Senso
         // If your OpenGL application is memory intensive,
         // you should consider de-allocating objects that
         // consume significant memory here.
+
         mGLView.onPause();
 
-        mStratux.stop();
+        //mStratux.stop();
 		
         /*
         locationManager.removeUpdates(this);
@@ -278,7 +281,7 @@ public class MFDMainActivity extends EFISMainActivity implements Listener, Senso
         // this is a good place to re-allocate them.
         mGLView.onResume();
 
-        mStratux.start();
+        //mStratux.start();
 
         /*
 		locationManager.requestLocationUpdates(provider, GPS_UPDATE_PERIOD, GPS_UPDATE_DISTANCE, this);  // 400ms or 1m
@@ -548,9 +551,11 @@ public class MFDMainActivity extends EFISMainActivity implements Listener, Senso
         }
     }
 
+
     //
     // Stratux handler
     //
+    /*
     protected boolean handleStratux()
     {
         //todo: // - check stratux status
@@ -576,6 +581,7 @@ public class MFDMainActivity extends EFISMainActivity implements Listener, Senso
         }
         return super.handleStratux();
     }
+    */
 
     //
     // Android  handler
@@ -654,7 +660,7 @@ public class MFDMainActivity extends EFISMainActivity implements Listener, Senso
             mGLView.setDisplayAirport(true);
 
             // Stratux handler
-            handleStratux();
+            //handleStratux();
         }
 
         // Apply a little filtering to the pitch, bank and course
@@ -673,7 +679,7 @@ public class MFDMainActivity extends EFISMainActivity implements Listener, Senso
         // Load new data to the buffer when the horizon gets close to the edge or
         // if we have gone off the current tile.
         //
-        float dem_dme = UNavigation.calcDme(mDemGTOPO30.lat0, mDemGTOPO30.lon0, gps_lat, gps_lon);
+        //float dem_dme = UNavigation.calcDme(mDemGTOPO30.lat0, mDemGTOPO30.lon0, gps_lat, gps_lon);
 
         //
         // Load new data into the buffer when the horizon gets close to the edge
@@ -681,6 +687,7 @@ public class MFDMainActivity extends EFISMainActivity implements Listener, Senso
         // Wait for 100 cycles to allow at least some
         // prior drawing to take place on startup
         //if (ctr++ > 100) {
+        /*
         if (ctr % 100 == 0) {
             // See if we are close to the edge or
             // see if we are stuck on null island or even on the tile
@@ -696,7 +703,7 @@ public class MFDMainActivity extends EFISMainActivity implements Listener, Senso
                 mGLView.setBannerMsg(false, " ");
             }
             //ctr = 0;
-        }
+        }*/
 
         //
         // Pass the values to mGLView for updating
@@ -713,7 +720,7 @@ public class MFDMainActivity extends EFISMainActivity implements Listener, Senso
         s = String.format("GPS %d / %d", gps_infix, gps_insky);
         mGLView.setGpsStatus(s);
 
-        mGLView.setAct(mStratux); // traffic list
+        //mGLView.setAct(mStratux); // traffic list
 
         _gps_agl = gps_agl; // save the previous altitude
     }

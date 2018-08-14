@@ -75,8 +75,9 @@ public class EFISMainActivity extends Activity //implements Listener, SensorEven
     protected int gps_insky;
     protected int gps_infix;
     protected float sensorBias;           // gyroscope / GPS bias
-    protected Gpx mGpx;                   // wpt database
-    protected DemGTOPO30 mDemGTOPO30;     // dem database
+
+    //protected Gpx mGpx;                   // wpt database
+    //protected DemGTOPO30 mDemGTOPO30;     // dem database
 
     // Digital filters
     protected DigitalFilter filterRateOfTurnGyro = new DigitalFilter(16); //8
@@ -96,11 +97,12 @@ public class EFISMainActivity extends Activity //implements Listener, SensorEven
     private MediaPlayer mpSinkRate;
     private MediaPlayer mpStall;*/
 
-    protected WifiManager wifiManager;
+    //protected WifiManager wifiManager;
     // Stratux Wifi
-    protected StratuxWiFiTask mStratux;
+    //protected StratuxWiFiTask mStratux;
 
 
+    /*
     protected boolean connectWiFi(String ssid)
     {
         // Connect to wifi
@@ -126,7 +128,9 @@ public class EFISMainActivity extends Activity //implements Listener, SensorEven
         }
         return false;
     }
+    */
 
+    /*
     protected boolean checkWiFiStatus(String ssid)
     {
         WifiInfo info = wifiManager.getConnectionInfo();
@@ -139,6 +143,7 @@ public class EFISMainActivity extends Activity //implements Listener, SensorEven
         else
             return false;
     }
+    */
 
         /*List<WifiConfiguration> list = wifiManager.getConfiguredNetworks();
         for( WifiConfiguration i : list ) {
@@ -155,6 +160,7 @@ public class EFISMainActivity extends Activity //implements Listener, SensorEven
     //
     // Stratux handler
     //
+    /*
     protected boolean handleStratux()
     {
         if (mStratux != null) {
@@ -186,6 +192,7 @@ public class EFISMainActivity extends Activity //implements Listener, SensorEven
             return false;
         }
     }
+    */
 
 
     //-------------------------------------------------------------------------

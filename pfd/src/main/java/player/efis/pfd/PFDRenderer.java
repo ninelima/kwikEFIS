@@ -115,8 +115,8 @@ public class PFDRenderer extends EFISRenderer implements GLSurfaceView.Renderer
 
         // FPV only means anything if we have speed and rate of climb, ie altitude
         if (displayFPV) renderFPV(scratch1);      // must be on the same matrix as the Pitch
-        if (displayAirport) renderAPT(scratch1);  // must be on the same matrix as the Pitch
-        if (true) renderACT(scratch1);  // must be on the same matrix as the Pitch
+        //if (displayAirport) renderAPT(scratch1);  // must be on the same matrix as the Pitch
+        //if (true) renderACT(scratch1);  // must be on the same matrix as the Pitch
         if (displayHITS) renderHITS(scratch1);    // will not keep in the viewport
 
         // Flight Director - FD
