@@ -1,19 +1,21 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
     repositories {
+        google()
         jcenter()
     }
+
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.3.1'
+        classpath 'com.android.tools.build:gradle:3.3.2'
     }
 }
 
 allprojects {
     repositories {
+        google()
         jcenter()
     }
 }
-
 
 // todo: need to find out how to run these after a compile
 task copyAppAPK(type: Copy) {
@@ -34,3 +36,7 @@ doLast{
     tasks.copyDataAPK.execute()
 }
 */
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}

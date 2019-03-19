@@ -1,0 +1,61 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 22
+    buildToolsVersion "28.0.3"
+
+    defaultConfig {
+        applicationId 'player.efis'
+        //noinspection MinSdkTooLow
+        minSdkVersion 9 //11
+        // We need to target 10 for the menu button
+        //noinspection ExpiredTargetSdkVersion
+        targetSdkVersion 22 //18
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    flavorDimensions "default"
+    productFlavors {
+        mfd {
+            dimension "default"
+            applicationIdSuffix ".mfd"
+            resValue "string", "app_name", "Kwik DMAP"
+            versionCode 25
+            versionName "2.3"
+        }
+        pfd {
+            dimension "default"
+            applicationIdSuffix ".pfd"
+            resValue "string", "app_name", "Kwik EFIS"
+            versionCode 24
+            versionName "4.2"
+        }
+    }
+    //Versioning scheme
+    //   versionCode is incremented on every new viable build
+    //   versionName "a.b"
+    //      where:
+    //        a - is a major update. Typically incorporates a new feature or significant change.
+    //        b - is a minor update. Typically incorporates a bugfix or data update.
+
+    compileOptions {
+        encoding = 'UTF-8'
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    lintOptions {
+        disable 'GoogleAppIndexingWarning'
+    }
+}
+
+dependencies {
+    implementation project(':ulib')
+    //implementation files('libs/vecmath.jar')
+}

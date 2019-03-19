@@ -1,1 +1,1 @@
-include ':pfd', ':mfd', ':ulib', ':data', ':data.usa.can', ':data.zar.aus', ':data.eur.rus', ':data.sah.jap', ':data.pan.arg' 
+include ':data', ':datapac', ':fd', ':ulib'

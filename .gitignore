@@ -1,13 +1,12 @@
 *.iml
 .gradle
-/local.properties
-/.idea/workspace.xml
-/.idea/libraries
+local.properties
+.idea
 .DS_Store
-/build
-/captures
-/misc
-/apk
+build
+captures
+misc
+apk
 .externalNativeBuild
 
 #built application files
@@ -18,7 +17,7 @@
 *.dex
 
 # AWK data cleanup scripts
-/scripts/clean
+scripts/clean
 
 # Java class files
 *.class
@@ -27,26 +26,12 @@
 bin/
 gen/
 
-# Local configuration file (sdk path, etc)
-local.properties
-
 # Windows thumbnail db
 Thumbs.db
-
-# OSX files
-.DS_Store
 
 # Eclipse project files
 .classpath
 .project
 
 # Android Studio
-*.iml
-.idea
-#.idea/workspace.xml - remove # and delete .idea if it better suit your needs.
-.gradle
-build/
 amake.sh
-
-#NDK
-obj/

@@ -1,0 +1,71 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 22
+    buildToolsVersion "28.0.3"
+
+    defaultConfig {
+        applicationId 'player.efis.data'
+        //noinspection MinSdkTooLow
+        minSdkVersion 9
+        //noinspection ExpiredTargetSdkVersion
+        targetSdkVersion 22
+        versionCode 3
+        versionName "1.2"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    flavorDimensions "default"
+    productFlavors {
+        eurrus {
+            dimension "default"
+            applicationIdSuffix ".eur.rus"
+            resValue "string", "app_name", "Kwik DataPac (eur.rus)"
+            //Kwik DataPac Europe/Russia
+        }
+        panarg {
+            dimension "default"
+            applicationIdSuffix ".pan.arg"
+            resValue "string", "app_name", "Kwik DataPac (pan.arg)"
+            //Kwik DataPac South America
+        }
+        sahjap {
+            dimension "default"
+            applicationIdSuffix ".sah.jap"
+            resValue "string", "app_name", "Kwik DataPac (sah.jap)"
+            //Kwik DataPac Sahara/Northern Africa/India/Indonesia/Japan
+        }
+        usacan {
+            dimension "default"
+            applicationIdSuffix ".usa.can"
+            resValue "string", "app_name", "Kwik DataPac (usa.can)"
+            //Kwik DataPac North America/Canada
+        }
+        zaraus {
+            dimension "default"
+            applicationIdSuffix ".zar.aus"
+            resValue "string", "app_name", "Kwik DataPac (zar.aus)"
+            //Kwik DataPac Southern Africa/Australia/New Zealand
+        }
+    }
+
+    compileOptions {
+        encoding = 'UTF-8'
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    lintOptions {
+        disable 'GoogleAppIndexingWarning'
+    }
+}
+
+dependencies {
+    implementation project(':data')
+}
