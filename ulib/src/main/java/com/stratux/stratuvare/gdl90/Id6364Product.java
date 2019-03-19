@@ -15,28 +15,26 @@ import java.util.LinkedList;
 
 
 /**
- * 
  * @author zkhan
- *
  */
 public class Id6364Product extends Product {
 
     private Nexrad mNexrad;
     private boolean mConus;
-    
+
     public Id6364Product() {
         super(ProductType.PRODUCT_TYPE_NEXRAD);
         setConus(false);
-    }
-    
-    public void setConus(boolean conus) {
-        mConus = conus;
     }
 
     public boolean isConus() {
         return mConus;
     }
-    
+
+    public void setConus(boolean conus) {
+        mConus = conus;
+    }
+
     @Override
     protected void parse(byte[] msg) {
         mNexrad = new Nexrad();
@@ -44,27 +42,23 @@ public class Id6364Product extends Product {
     }
 
     /**
-     * 
      * @return
      */
     public int getBlockNumber() {
-       return mNexrad.getBlock(); 
+        return mNexrad.getBlock();
     }
-    
+
     /**
-     * 
      * @return
      */
     public int[] getData() {
-       return mNexrad.getData(); 
+        return mNexrad.getData();
     }
 
     /**
-     * 
      * @return
      */
     public LinkedList<Integer> getEmpty() {
-       return mNexrad.getEmpty(); 
+        return mNexrad.getEmpty();
     }
-
 }

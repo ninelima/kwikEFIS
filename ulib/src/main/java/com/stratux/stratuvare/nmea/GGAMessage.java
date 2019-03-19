@@ -14,30 +14,27 @@ package com.stratux.stratuvare.nmea;
 import com.stratux.stratuvare.utils.Logger;
 
 /**
- * 
  * @author zkhan
- *
  */
 public class GGAMessage extends Message {
 
     float mLat;
     float mLon;
-    
-    int     mAltitude;
 
-    
+    int mAltitude;
+
+
     public GGAMessage() {
         super(MessageType.EssentialFix);
     }
 
     /**
-     * 
      * @param msg
      */
     public void parse(String msg) {
         String tokens[] = msg.split(",");
-        
-        if(tokens.length < 10) {
+
+        if (tokens.length < 10) {
             return;
         }
         /*
@@ -50,23 +47,21 @@ public class GGAMessage extends Message {
         double tmp1;
         try {
             tmp = Double.parseDouble(tokens[2]);
-            tmp1 = (double)((int)tmp / (int)100);
-            mLat = (float)(tmp - (tmp1 * 100.0)) / 60.f + (float)tmp1;
-            if(tokens[3].equals("S")) {
+            tmp1 = (double) ((int) tmp / 100);
+            mLat = (float) (tmp - (tmp1 * 100.0)) / 60.f + (float) tmp1;
+            if (tokens[3].equals("S")) {
                 mLat = -mLat;
             }
             tmp = Double.parseDouble(tokens[4]);
-            tmp1 = (double)((int)tmp / (int)100);
-            mLon = (float)(tmp - (tmp1 * 100.0)) / 60.f + (float)tmp1;
-            if(tokens[5].equals("W")) {
+            tmp1 = (double) ((int) tmp / 100);
+            mLon = (float) (tmp - (tmp1 * 100.0)) / 60.f + (float) tmp1;
+            if (tokens[5].equals("W")) {
                 mLon = -mLon;
             }
-            mAltitude = (int)Double.parseDouble(tokens[9]);
-            
-            Logger.Logit("lat " + mLat + " lon " + mLon + " mAltitude "  + mAltitude);
-        }
-        catch (Exception e) {
-            
+            mAltitude = (int) Double.parseDouble(tokens[9]);
+
+            Logger.Logit("lat " + mLat + " lon " + mLon + " mAltitude " + mAltitude);
+        } catch (Exception e) {
         }
     }
 }

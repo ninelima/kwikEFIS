@@ -12,14 +12,13 @@ Redistribution and use in source and binary forms, with or without modification,
 package com.stratux.stratuvare.nmea;
 
 /**
- * 
  * @author zkhan
- *
  */
 public class MessageFactory {
 
     /**
      * Find NMEA checksum that excludes $ and things including, after *
+     *
      * @param bufin
      * @param len
      * @return
@@ -31,28 +30,28 @@ public class MessageFactory {
         /*
          * Find checksum from after $ to before *
          */
-        while(i < len) {
-            if(bufin[i] == 42) {
+        while (i < len) {
+            if (bufin[i] == 42) {
                 break;
             }
-            xor = xor ^ ((int)bufin[i] & 0xFF);
+            xor = xor ^ ((int) bufin[i] & 0xFF);
             i++;
         }
 
         return xor;
     }
-    
+
     public static Message buildMessage(byte bufin[]) {
-        
+
         int len = bufin.length;
-        
-        if(len < 6) {
+
+        if (len < 6) {
             /*
              * A simple check for length
              */
             return null;
         }
-        
+
         /*
          * Check checksum
          */
@@ -61,24 +60,23 @@ public class MessageFactory {
         /*
          * Starts with $GP, ends with checksum *DD
          */
-        if(bufin[0] == 36 && bufin[1] == 71) {
+        if (bufin[0] == 36 && bufin[1] == 71) {
             int xor = checkSum(bufin);
-           
+
             /*
              * Checksum is in xor data[len - 1] and data[len - 2] has checksum in Hex
              */
             System.arraycopy(bufin, len - 4, cs, 0, 2);
             String css = new String(cs);
             String ma = Integer.toHexString(xor);
-            if(!ma.equalsIgnoreCase(css)) {
+            if (!ma.equalsIgnoreCase(css)) {
                 return null;
             }
-        }
-        else {
-        	return null;
+        } else {
+            return null;
         }
 
-        
+
         /*
          * data has actual data and type is its type
          * Parse now
@@ -92,31 +90,32 @@ public class MessageFactory {
              */
             data = new String(bufin);
             type = data.substring(3, data.indexOf(","));
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             return null;
         }
-        
+
         /**
          * Find which message we have
          */
-        if(type.equals(MessageType.RecommendedMinimumSentence)) {
-            m = new RMCMessage();
+        switch (type) {
+            case MessageType.RecommendedMinimumSentence:
+                m = new RMCMessage();
+                break;
+            case MessageType.EssentialFix:
+                m = new GGAMessage();
+                break;
+            case MessageType.Traffic:
+                m = new RTMMessage();
+                break;
         }
-        else if(type.equals(MessageType.EssentialFix)) {
-            m = new GGAMessage();
-        }
-        else if(type.equals(MessageType.Traffic)) {
-            m = new RTMMessage();
-        }
-                
+
         /*
          * Parse it.
          */
-        if(null != m) {
+        if (null != m) {
             m.parse(data);
         }
-        return(m);
-    }    
-    
+        return (m);
+    }
+
 }

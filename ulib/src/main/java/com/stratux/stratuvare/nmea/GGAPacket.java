@@ -17,16 +17,14 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 /**
- * 
  * @author zkhan
- *
  */
 public class GGAPacket extends Packet {
 
     public GGAPacket(long time, double latitude, double longitude, double altitude) {
         mPacket = "$GPGGA,";
-        
-        
+
+
         /*
          * Convert to UTC system time, and format to hhmmss as in NMEA
          */
@@ -34,74 +32,72 @@ public class GGAPacket extends Packet {
         SimpleDateFormat sdf = new SimpleDateFormat("HHmmss", Locale.US);
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         mPacket += sdf.format(date) + ",";
-        
+
         /*
          * Put latitude
          */
-        if(latitude > 0) {
+        if (latitude > 0) {
             int lat;
             double deg;
-            
-            lat = (int)latitude;
-            deg = (latitude - (double)lat) * 60.0;
-            
+
+            lat = (int) latitude;
+            deg = (latitude - (double) lat) * 60.0;
+
             mPacket += String.format("%02d", lat);
             mPacket += String.format("%06.3f", deg);
             mPacket += ",N,";
-        }
-        else {
+        } else {
             int lat;
             double deg;
             latitude = -latitude;
-            lat = (int)latitude;
-            deg = (latitude - (double)lat) * 60.0;
-            
+            lat = (int) latitude;
+            deg = (latitude - (double) lat) * 60.0;
+
             mPacket += String.format("%02d", lat);
             mPacket += String.format("%06.3f", deg);
-            mPacket += ",S,";            
+            mPacket += ",S,";
         }
 
         /*
          * Put longitude
          */
-        if(longitude > 0) {
+        if (longitude > 0) {
             int lon;
             double deg;
-            
-            lon = (int)longitude;
-            deg = (longitude - (double)lon) * 60.0;
-            
+
+            lon = (int) longitude;
+            deg = (longitude - (double) lon) * 60.0;
+
             mPacket += String.format("%03d", lon);
             mPacket += String.format("%06.3f", deg);
             mPacket += ",E,";
-        }
-        else {
+        } else {
             int lon;
             double deg;
             longitude = -longitude;
-            lon = (int)longitude;
-            deg = (longitude - (double)lon) * 60.0;
-            
+            lon = (int) longitude;
+            deg = (longitude - (double) lon) * 60.0;
+
             mPacket += String.format("%03d", lon);
             mPacket += String.format("%06.3f", deg);
-            mPacket += ",W,";            
+            mPacket += ",W,";
         }
 
         /*
          * Sim mode
          */
         mPacket += "8,";
-        
+
         /*
          * Do not have satellite info
          */
         mPacket += "00,";
 
         /*
-         * Horizontal dilution 
+         * Horizontal dilution
          */
         mPacket += "1.0,";
-        
+
         /*
          * Put altitude
          */
@@ -111,12 +107,11 @@ public class GGAPacket extends Packet {
         /*
          * XXX:
          * Calculate geoid
-         * 
+         *
          * Add couple of empty fields
          */
         mPacket += "0.0,M,,";
 
         assemble();
     }
-
 }

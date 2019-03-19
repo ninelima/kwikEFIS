@@ -12,9 +12,7 @@ Redistribution and use in source and binary forms, with or without modification,
 package com.stratux.stratuvare.gdl90;
 
 /**
- * 
  * @author zkhan
- *
  */
 public class ProductFactory {
 
@@ -33,58 +31,57 @@ public class ProductFactory {
         s.getBits(1); /* Provider spec flag, discard */
 
         int productID = s.getBits(11);
-      
-        if(flagAppMethod) {
+
+        if (flagAppMethod) {
             s.getBits(8);
         }
-      
-        if(flagGeoLocator) {
+
+        if (flagGeoLocator) {
             s.getBits(20);
         }
-      
+
         boolean segFlag = s.getBits(1) != 0;
-      
+
         int timeOpts = s.getBits(2);
-      
+
         // 00 - No day, No sec
         // 01 - sec
         // 10 - day
         // 11 - day, sec
         int month = -1, day = -1, hours = -1, mins = -1, secs = -1;
-        if((timeOpts & 0x02) != 0) {
+        if ((timeOpts & 0x02) != 0) {
             month = s.getBits(4);
-            day   = s.getBits(5);
+            day = s.getBits(5);
         }
         hours = s.getBits(5);
-        mins  = s.getBits(6);
-        if((timeOpts & 0x01) != 0) {
+        mins = s.getBits(6);
+        if ((timeOpts & 0x01) != 0) {
             secs = s.getBits(6);
         }
-      
-        if(segFlag) {
+
+        if (segFlag) {
             /*
              * XXX:
              * Implement this. Uncommon?
              */
             return null;
         }
-      
+
         int totalRead = s.totalRead();
         int total = bufin.length;
-      
+
         int length = total - totalRead;
-        int offset = totalRead;
-      
+
         Product p = null;
-        
-        switch(productID) {
+
+        switch (productID) {
             case 8:
                 p = new Id8Product();
                 break;
             case 9:
                 p = new Id9Product();
                 break;
-            case 10:    
+            case 10:
                 p = new Id10Product();
                 break;
             case 11:
@@ -98,11 +95,11 @@ public class ProductFactory {
                 break;
             case 63:
                 p = new Id6364Product();
-                ((Id6364Product)p).setConus(false);
+                ((Id6364Product) p).setConus(false);
                 break;
             case 64:
                 p = new Id6364Product();
-                ((Id6364Product)p).setConus(true);
+                ((Id6364Product) p).setConus(true);
                 break;
             case 413:
                 p = new Id413Product();
@@ -113,16 +110,16 @@ public class ProductFactory {
         }
 
         byte data[] = new byte[length];
-        System.arraycopy(bufin, offset, data, 0, length);
+        System.arraycopy(bufin, totalRead, data, 0, length);
 
         /*
          * Parse it.
          */
-        if(null != p) {
+        if (null != p) {
             p.parse(data);
             p.setTime(month, day, hours, mins, secs);
         }
-        
-        return(p);   
-    }   
+
+        return (p);
+    }
 }

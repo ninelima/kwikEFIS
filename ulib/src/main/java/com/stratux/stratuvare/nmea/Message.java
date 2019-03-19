@@ -16,31 +16,28 @@ import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
 /**
- * 
  * @author zkhan
- *
  */
 public abstract class Message {
 
     private String mType;
     private long mTime;
-    
+
     public Message(String type) {
-        mType = type; 
-        Calendar calendar = new GregorianCalendar();  
-        TimeZone mTimeZone = calendar.getTimeZone();  
-        int offset = mTimeZone.getRawOffset();  
+        mType = type;
+        Calendar calendar = new GregorianCalendar();
+        TimeZone mTimeZone = calendar.getTimeZone();
+        int offset = mTimeZone.getRawOffset();
         mTime = System.currentTimeMillis() - offset;
     }
-    
+
     public long getTime() {
         return mTime;
     }
-    
+
     public String getType() {
         return mType;
     }
 
     protected abstract void parse(String msg);
-
 }

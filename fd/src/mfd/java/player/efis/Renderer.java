@@ -16,29 +16,31 @@
 
 package player.efis;
 
-import java.util.Iterator;
+import android.content.Context;
+import android.opengl.GLES20;
+import android.opengl.GLSurfaceView;
+import android.opengl.Matrix;
+
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.opengles.GL10;
+
+import player.efis.common.AircraftData;
 import player.efis.common.AirspaceClass;
 import player.efis.common.DemColor;
 import player.efis.common.DemGTOPO30;
-import player.efis.common.AircraftData;
 import player.efis.common.EFISRenderer;
 import player.efis.common.OpenAir;
 import player.efis.common.OpenAirPoint;
 import player.efis.common.OpenAirRec;
 import player.efis.common.Point;
+import player.gles20.GLText;
 import player.gles20.Line;
 import player.gles20.PolyLine;
 import player.gles20.Polygon;
 import player.gles20.Square;
 import player.gles20.Triangle;
-import player.ulib.*;
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.opengles.GL10;
-import player.gles20.GLText;
-import android.content.Context;
-import android.opengl.GLES20;
-import android.opengl.GLSurfaceView;
-import android.opengl.Matrix;
+import player.ulib.UNavigation;
+import player.ulib.UTrig;
 
 public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
 {
@@ -84,12 +86,13 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
 
         zfloat = 0;
 
-        if (displayDEM && !fatFingerActive) renderDEMTerrain(mMVPMatrix);  // fatFingerActive just for performance
+        if (displayDEM && !fatFingerActive)
+            renderDEMTerrain(mMVPMatrix);  // fatFingerActive just for performance
         if (displayAirspace) renderAirspace(mMVPMatrix);
         if (displayAirport) renderAPT(mMVPMatrix);  // must be on the same matrix as the Pitch
-        if (true) renderTargets(mMVPMatrix);        // TODO: 2018-08-31 Add control of targets
+        renderTargets(mMVPMatrix);        // TODO: 2018-08-31 Add control of targets
 
-        // Remote Magnetic Inidicator - RMI
+        // Remote Magnetic Indicator - RMI
         if (displayRMI) {
             float xlx;
             float xly;
@@ -105,7 +108,7 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
             else {
                 //Portrait
                 xlx = 0;
-                xly = -0.20f * pixH2;  
+                xly = -0.20f * pixH2;
                 roseScale = 1.9f;
             }
 
@@ -128,15 +131,15 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
         }
         renderMapScale(mMVPMatrix);  // do before the DI
 
-        if (displayTape == true) {
+        if (displayTape) {
             float xlx;
             float xly;
 
             //if (displayTape == true) renderFixedVSIMarkers(mMVPMatrix); // todo: maybe later
-			
+
             xlx = 0.99f * pixW2;
             xly = -0.6f * pixM2;
-			
+
             Matrix.translateM(mMVPMatrix, 0, xlx, 0, 0);
             renderFixedALTMarkers(mMVPMatrix);
             Matrix.translateM(mMVPMatrix, 0, 0, xly, 0);
@@ -148,7 +151,7 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
             Matrix.translateM(mMVPMatrix, 0, xlx, 0, 0);
             renderFixedASIMarkers(mMVPMatrix);
             Matrix.translateM(mMVPMatrix, 0, -xlx, -0, 0);
-			
+
             xlx = 0;
             xly = +0.90f * pixH2;
             Matrix.translateM(mMVPMatrix, 0, xlx, xly, 0);
@@ -210,7 +213,7 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
         if (pixW < pixH) pixM = pixW;
         else pixM = pixH;
 
-        // because the ascpect ratio is different in landscape and portrait (due to menu bar)
+        // because the aspect ratio is different in landscape and portrait (due to menu bar)
         // we just fudge it as 85% throughout,  looks OK in landscape as well
         pixM = pixM * 88 / 100;
         pixM2 = pixM / 2;
@@ -254,8 +257,8 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
     protected Point project(float relbrg, float dme)
     {
         return new Point(
-                mMapZoom * dme * UTrig.icos(90-(int)relbrg),
-                mMapZoom * dme * UTrig.isin(90-(int)relbrg)
+                mMapZoom * dme * UTrig.icos(90 - (int) relbrg),
+                mMapZoom * dme * UTrig.isin(90 - (int) relbrg)
         );
     } // end of project
 
@@ -263,8 +266,8 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
     protected Point project(float relbrg, float dme, float elev)
     {
         return new Point(
-                mMapZoom * dme * UTrig.icos(90-(int)relbrg),
-                mMapZoom * dme * UTrig.isin(90-(int)relbrg)
+                mMapZoom * dme * UTrig.icos(90 - (int) relbrg),
+                mMapZoom * dme * UTrig.isin(90 - (int) relbrg)
         );
     } // end of project
 
@@ -297,7 +300,7 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
         // elements are displayed. Used by WPT and ALT
         if (Layout == layout_t.LANDSCAPE) {
             // Landscape --------------
-            lineAutoWptDetails =   +0.50f;
+            lineAutoWptDetails = +0.50f;
             lineAncillaryDetails = -0.30f;
 
             if (fatFingerActive) {
@@ -341,12 +344,12 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
                 spinnerTextScale = 2f;
             }
             else {
-                selWptDec = -0.60f * pixH2; 
-                selWptInc = -0.71f * pixH2; 
+                selWptDec = -0.60f * pixH2;
+                selWptInc = -0.71f * pixH2;
                 selAltDec = -0.80f * pixH2;
                 selAltInc = -0.91f * pixH2;
 
-                lineC = -0.82f; 
+                lineC = -0.82f;
                 leftC = 0.6f;
                 spinnerStep = 0.1f;
                 spinnerTextScale = 1f;
@@ -369,7 +372,7 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
 
         float dme;             //in nm
         float step = 0.50f;    //in nm, normally this should be = gridy
-                               // 0.5 nm is appox 1km which is the size of the DEM tiles.
+        // 0.5 nm is appox 1km which is the size of the DEM tiles.
         float agl_ft;          //in Feet
         float demRelBrg;       // = DIValue + Math.toDegrees(Math.atan2(deltaLon, deltaLat));
         float caution;
@@ -382,14 +385,14 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
 
 
         for (dme = 0; dme <= range; dme = dme + step) { // DEM_HORIZON=20, was 30
-            float _x1=0, _y1=0;
+            float _x1 = 0, _y1 = 0;
             for (demRelBrg = -180; demRelBrg <= 180; demRelBrg = demRelBrg + 1) { //1
                 lat = LatValue + dme / 60 * UTrig.icos((int) (DIValue + demRelBrg));
                 lon = LonValue + dme / 60 * UTrig.isin((int) (DIValue + demRelBrg));
                 z1 = DemGTOPO30.getElev(lat, lon);
 
-                x1 = mMapZoom * (dme * UTrig.icos(90-(int)demRelBrg));
-                y1 = mMapZoom * (dme * UTrig.isin(90-(int)demRelBrg));
+                x1 = mMapZoom * (dme * UTrig.icos(90 - (int) demRelBrg));
+                y1 = mMapZoom * (dme * UTrig.isin(90 - (int) demRelBrg));
 
                 if ((_x1 != 0) || (_y1 != 0)) {
 
@@ -404,15 +407,19 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
 
                     float wid = mMapZoom * step * 0.7071f; // optional  * 0.7071f;  // 1/sqrt(2)
 
-                    if (agl_ft > 1000) mSquare.SetColor(color.red, color.green, color.blue, 1);                     // Enroute
-                    else if (IASValue < IASValueThreshold) mSquare.SetColor(color.red, color.green, color.blue, 1); // Taxi or  approach
-                    else if (agl_ft > 200) mSquare.SetColor(caution, caution, 0, 1f);  // Proximity notification
-                    else mSquare.SetColor(caution, 0, 0, 1f);                          // Proximity warning
+                    if (agl_ft > 1000)
+                        mSquare.SetColor(color.red, color.green, color.blue, 1);                     // Enroute
+                    else if (IASValue < IASValueThreshold)
+                        mSquare.SetColor(color.red, color.green, color.blue, 1); // Taxi or  approach
+                    else if (agl_ft > 200)
+                        mSquare.SetColor(caution, caution, 0, 1f);  // Proximity notification
+                    else
+                        mSquare.SetColor(caution, 0, 0, 1f);                          // Proximity warning
                     float[] squarePoly = {
-                            x1-wid, y1-wid, z,
-                            x1-wid, y1+wid, z,
-                            x1+wid, y1+wid, z,
-                            x1+wid, y1-wid, z
+                            x1 - wid, y1 - wid, z,
+                            x1 - wid, y1 + wid, z,
+                            x1 + wid, y1 + wid, z,
+                            x1 + wid, y1 - wid, z
                     };
                     mSquare.SetVerts(squarePoly);
                     mSquare.draw(matrix);
@@ -442,27 +449,34 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
         DemColor color;
 
         nrAirspaceFound = 0;
-        Iterator<OpenAirRec> it = OpenAir.airspacelst.iterator();
-        while (it.hasNext()) {
+        for (OpenAirRec anAirspacelst : OpenAir.airspacelst) {
             OpenAirRec currAirspace;
             try {
-                currAirspace = it.next();
+                currAirspace = anAirspacelst;
             }
             //catch (ConcurrentModificationException e) {
             catch (Exception e) {
                 break;
             }
-            _x1 = 0; _y1 = 0;
+            _x1 = 0;
+            _y1 = 0;
             String airspaceDesc = String.format("%s LL FL%d", currAirspace.ac, currAirspace.al);
 
             // Set the individual airspace colors
-            if      (currAirspace.ac.equals("A") && AirspaceClass.A) color = new DemColor(0.37f, 0.62f, 0.42f); // ?
-            else if (currAirspace.ac.equals("B") && AirspaceClass.B) color = new DemColor(0.37f, 0.42f, 0.62f); // Dk mod Powder blue 0.6
-            else if (currAirspace.ac.equals("C") && AirspaceClass.C) color = new DemColor(0.37f, 0.42f, 0.62f); // Dk mod Powder blue 0.6
-            else if (currAirspace.ac.equals("P") && AirspaceClass.P) color = new DemColor(0.45f, 0.20f, 0.20f);
-            else if (currAirspace.ac.equals("R") && AirspaceClass.R) color = new DemColor(0.45f, 0.20f, 0.20f);
-            else if (currAirspace.ac.equals("Q") && AirspaceClass.Q) color = new DemColor(0.25f, 0.10f, 0.10f);
-            else if (currAirspace.ac.equals("CTR") && AirspaceClass.CTR) color = new DemColor(0.4f, 0.4f, 0.4f); // grey
+            if (currAirspace.ac.equals("A") && AirspaceClass.A)
+                color = new DemColor(0.37f, 0.62f, 0.42f); // ?
+            else if (currAirspace.ac.equals("B") && AirspaceClass.B)
+                color = new DemColor(0.37f, 0.42f, 0.62f); // Dk mod Powder blue 0.6
+            else if (currAirspace.ac.equals("C") && AirspaceClass.C)
+                color = new DemColor(0.37f, 0.42f, 0.62f); // Dk mod Powder blue 0.6
+            else if (currAirspace.ac.equals("P") && AirspaceClass.P)
+                color = new DemColor(0.45f, 0.20f, 0.20f);
+            else if (currAirspace.ac.equals("R") && AirspaceClass.R)
+                color = new DemColor(0.45f, 0.20f, 0.20f);
+            else if (currAirspace.ac.equals("Q") && AirspaceClass.Q)
+                color = new DemColor(0.25f, 0.10f, 0.10f);
+            else if (currAirspace.ac.equals("CTR") && AirspaceClass.CTR)
+                color = new DemColor(0.4f, 0.4f, 0.4f); // grey
             else continue; //color = new DemColor(0.4f, 0.4f, 0.4f);
 
             // Handle Monochrome
@@ -471,11 +485,10 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
                 color.blue = 0;
             }
 
-            Iterator<OpenAirPoint> it2 = currAirspace.pointList.iterator();
-            while (it2.hasNext()) {
+            for (OpenAirPoint aPointList : currAirspace.pointList) {
                 OpenAirPoint currAirPoint;
                 try {
-                    currAirPoint = it2.next();
+                    currAirPoint = aPointList;
                 }
                 //catch (ConcurrentModificationException e) {
                 catch (Exception e) {
@@ -485,7 +498,7 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
                 dme = UNavigation.calcDme(LatValue, LonValue, currAirPoint.lat, currAirPoint.lon); // in ft
 
                 // Apply selection criteria
-                if (dme > AptSeekRange *2)
+                if (dme > AptSeekRange * 2)
                     break;
 
                 airspacepntRelBrg = UNavigation.calcRelBrg(LatValue, LonValue, currAirPoint.lat, currAirPoint.lon, DIValue);
@@ -497,7 +510,7 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
                     mLine.SetColor(color.red, color.green, color.blue, 0.85f);
                     mLine.SetVerts(
                             _x1, _y1, z,
-                            x1, y1,  z
+                            x1, y1, z
                     );
                     mLine.draw(matrix);
                 }
@@ -527,7 +540,7 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
     }
 
     //---------------------------------------------------------------------------
-    // EFIS serviceability ... aka the Red X's
+    // EFIS serviceability ... aka the Red Xs
     //
 
     // Artificial Horizon serviceability
@@ -540,5 +553,4 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
     {
         ServiceableMap = false;
     }
-
 }

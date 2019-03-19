@@ -7,7 +7,7 @@
         <item>50/50</item>
         <item>Favour GPS</item>
         <item>All GPS</item>
-        </string-array>
+    </string-array>
 
     <string-array name="sensor_bias_values">
         <item>1.00f</item>
@@ -15,15 +15,14 @@
         <item>0.50f</item>
         <item>0.15f</item>
         <item>0.00f</item>
-        </string-array>
-    <!--
-    <string-array name="region_names">
+    </string-array>
+
+    <!--string-array name="region_names">
         <item>North West (Americas)</item>
         <item>North East (Europe, Russia, Asia)</item>
         <item>South West (South America)</item>
         <item>South East (Southern Africa, Oceania)</item>
-    </string-array>
-    -->
+    </string-array-->
 
     <string-array name="region_values">
         <item>gpx.north.west</item>
@@ -31,7 +30,7 @@
         <item>gpx.south.west</item>
         <item>gpx.south.east</item>
     </string-array>
-    
+
     <string-array name="ac_list_names">
         <item>AZTEC - Piper Aztec</item>
         <item>CRICRI - Colomban CriCri</item>
@@ -74,43 +73,33 @@
         <item>2</item>
     </string-array>
 
+    <!--string-array name="screen_mode_names">
+        <item>Locked</item>
+        <item>Landscape</item>
 
+    </string-array>
+    <string-array name="screen_mode_values">
+        <item>0.0.0</item>
+    </string-array>
 
-    <!--
-        <string-array name="screen_mode_names">
-            <item>Locked</item>
-            <item>Landscape</item>
+    <string-array name="version_names">
+        <item>0.0.0</item>
+    </string-array>
+    <string-array name="version_values" /-->
 
-        </string-array>
-        <string-array name="screen_mode_values">
-            <item>0.0.0</item>
-        </string-array>
-
-
-        <string-array name="version_names">
-            <item>0.0.0</item>
-        </string-array>
-        <string-array name="version_values">
-        </string-array>
-    -->
-
-
-    <!--
-<string-array name="ac_list_values">
-    <item>0</item>
-    <item>1</item>
-    <item>2</item>
-    <item>3</item>
-    <item>4</item>
-    <item>5</item>
-    <item>6</item>
-    <item>7</item>
-    <item>8</item>
-    <item>9</item>
-    <item>10</item>
-    <item>11</item>
-</string-array>
-
-    -->
+    <!--string-array name="ac_list_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+        <item>9</item>
+        <item>10</item>
+        <item>11</item>
+    </string-array-->
 
 </resources>

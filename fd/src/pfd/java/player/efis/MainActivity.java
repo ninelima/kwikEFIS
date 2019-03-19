@@ -54,8 +54,8 @@ import player.ulib.UNavigation;
 import player.ulib.UTrig;
 import player.ulib.Unit;
 
-
-public class MainActivity extends EFISMainActivity implements Listener, SensorEventListener, LocationListener {
+public class MainActivity extends EFISMainActivity implements Listener, SensorEventListener, LocationListener
+{
     public static final String PREFS_NAME = R.string.app_name + ".prefs";
     private SurfaceView mGLView;
 
@@ -83,8 +83,7 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
         if (mGLView.mRenderer.fatFingerActive == true) {
             mGLView.mRenderer.fatFingerActive = false;
             mGLView.mRenderer.setSpinnerParams();
-        }
-        else openOptionsMenu();
+        } else openOptionsMenu();
     }
 
     // This method is called once the menu is selected
@@ -107,8 +106,7 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
                 if (bLockedMode == false) {
                     finish();
                     //System.exit(0); // This is brutal, it does not exit gracefully
-                }
-                else Toast.makeText(this, "Locked Mode: Active", Toast.LENGTH_SHORT).show();
+                } else Toast.makeText(this, "Locked Mode: Active", Toast.LENGTH_SHORT).show();
                 break;
             // more code...
             default:
@@ -139,7 +137,7 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
         setContentView(mGLView);
 
         // Get the version number of the app
-        PackageInfo pInfo = null;
+        PackageInfo pInfo;
         try {
             pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
         }
@@ -372,12 +370,10 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
     }
 
 
-
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras)
     {
         if (!LocationManager.GPS_PROVIDER.equals(provider)) {
-            return;
         }
         // do something
     }
@@ -502,7 +498,6 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
     }
     // end location abs ------------------------
 
-
     private void setUserPrefs()
     {
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
@@ -544,9 +539,10 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
         bStratuxActive = settings.getBoolean("stratuxActive", false);
         bHudMode = settings.getBoolean("displayMirror", false);
 
-        // If the aircraft is changed, update the paramaters
+        // If the aircraft is changed, update the parameters
         String s = settings.getString("AircraftModel", "RV8");
-        AircraftData.setAircraftData(s); //mGLView.mRenderer.setAircraftData(s);  // refactored  to static model
+        AircraftData.setAircraftData(s);
+        //mGLView.mRenderer.setAircraftData(s);  // refactored to static model
 
         // landscape / portrait mode toggle
         bLandscapeMode = settings.getBoolean("landscapeMode", false);
@@ -759,7 +755,7 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
             hasSpeed = true;
         }
         else {
-            // Clear the simulator spash
+            // Clear the simulator splash
             mGLView.setSimulatorActive(false, " ");
 
             // Handle Stratux or Android sensors
@@ -889,13 +885,12 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
                         if (!mpCautionTerrian.isPlaying()) mpCautionTerrian.start();
                     } // caution terrain
 
-                    // Play the "five hundred" song when decending through 500ft
+                    // Play the "five hundred" song when descending through 500ft
                     if ((_gps_agl > 152.4f)
                             && (gps_agl <= 152.4f)) { // 500ft
                         if (!mpFiveHundred.isPlaying()) mpFiveHundred.start();
                     }
                 } // DemGTOPO30 required options
-
             }
             catch (IllegalStateException e) {
                 //e.printStackTrace();
@@ -915,5 +910,3 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
         super.Simulate();
     }
 }
-
-

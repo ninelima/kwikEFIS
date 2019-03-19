@@ -16,24 +16,50 @@
 
 package player.efis.common;
 
+import android.content.Context;
+
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Iterator;
-import android.content.Context;
-import android.widget.Toast;
 
 import player.ulib.UNavigation;
 import player.ulib.UTrig;
 
-
 public class OpenAir
 {
-    private Context context;
-    public String _region, region = "null";
     public static ArrayList<OpenAirRec> airspacelst = null;
+    public String _region, region = "null";
+    private Context context;
 
+    //
+    // Constructor
+    //
+    public OpenAir(Context context)
+    {
+        this.context = context;
+        airspacelst = new ArrayList();
+    }
+
+    public static ArrayList<OpenAirRec> getAptSelect(float lat, float lon, int range, int nr)
+    {
+        //ArrayList<Apt> nearestAptList = null;
+        ArrayList<OpenAirRec> nearestAptList = new ArrayList();
+
+        for (OpenAirRec currProduct : airspacelst) {
+            // add code to determine  the <nr> apts in range
+            double deltaLat = lat - currProduct.clat;
+            double deltaLon = lon - currProduct.clon;
+            //double d =  Math.hypot(deltaLon, deltaLat);  // in degree, 1 deg = 60 nm
+            double d = Math.sqrt(deltaLon * deltaLon + deltaLat * deltaLat);  // faster then hypot, see www
+
+            if (d < range) {
+                nearestAptList.add(currProduct);
+            }
+        }
+        return nearestAptList;
+    }
+    // ------------------------------------------ */
 
     //-------------------------------------------------------------------------
     // use the lat lon to determine which region file is active
@@ -48,7 +74,7 @@ public class OpenAir
         else if ((lat <= -10) && (lon > +60) /*&& (lon < 60)*/) {
             sRegion = "aus";
         }
-        else if ((lat > +20) && (lon >= -20)  && (lon < +30)) {
+        else if ((lat > +20) && (lon >= -20) && (lon < +30)) {
             sRegion = "eur";
         }
         else if ((lat > +20) && (lon >= -20) && (lon > +30)) {
@@ -63,9 +89,8 @@ public class OpenAir
         return sRegion;
     }
 
-
     ///*
-    public final boolean Parse(DataInputStream reader) //, OperationEnvironment operation)
+    public final boolean Parse(DataInputStream reader)//, OperationEnvironment operation)
     {
         boolean ignore = false;
 
@@ -124,8 +149,10 @@ public class OpenAir
                     String s = line.substring(3).replaceAll(" ", "");  // kill spaces
                     String slat = s.split("[NS]")[0];
                     String slon = s.split("[NS]")[1].split("[EW]")[0];
-                    float lat = UNavigation.DMStoD(slat); if (s.contains("S")) lat = -lat;
-                    float lon = UNavigation.DMStoD(slon); if (s.contains("W")) lon = -lon;
+                    float lat = UNavigation.DMStoD(slat);
+                    if (s.contains("S")) lat = -lat;
+                    float lon = UNavigation.DMStoD(slon);
+                    if (s.contains("W")) lon = -lon;
                     OpenAirPoint pnt = new OpenAirPoint(lat, lon);
                     rec.pointList.add(pnt);
                     //
@@ -167,8 +194,8 @@ public class OpenAir
                     // do the arc
                     if (angleDir == -1) {
                         for (float i = absBrg1; i >= absBrg2; i = i - angleInc) {
-                            lat = arcLat + dme/60f * UTrig.isin(90- (int) i);
-                            lon = arcLon + dme/60f * UTrig.icos(90- (int) i);
+                            lat = arcLat + dme / 60f * UTrig.isin(90 - (int) i);
+                            lon = arcLon + dme / 60f * UTrig.icos(90 - (int) i);
 
                             pnt = new OpenAirPoint(lat, lon);
                             rec.pointList.add(pnt);
@@ -176,8 +203,8 @@ public class OpenAir
                     }
                     if (angleDir == +1) {
                         for (float i = absBrg1; i <= absBrg2; i = i + angleInc) {
-                            lat = arcLat + dme/60f * UTrig.isin(90- (int) i);
-                            lon = arcLon + dme/60f * UTrig.icos(90- (int) i);
+                            lat = arcLat + dme / 60f * UTrig.isin(90 - (int) i);
+                            lon = arcLon + dme / 60f * UTrig.icos(90 - (int) i);
 
                             pnt = new OpenAirPoint(lat, lon);
                             rec.pointList.add(pnt);
@@ -196,8 +223,8 @@ public class OpenAir
 
                     float lat, lon;
                     for (float i = 0; i <= 360; i = i + angleInc) {
-                        lat = arcLat + dme/60f * UTrig.isin(90- (int) i);
-                        lon = arcLon + dme/60f * UTrig.icos(90- (int) i);
+                        lat = arcLat + dme / 60f * UTrig.isin(90 - (int) i);
+                        lon = arcLon + dme / 60f * UTrig.icos(90 - (int) i);
 
                         OpenAirPoint pnt = new OpenAirPoint(lat, lon);
                         rec.pointList.add(pnt);
@@ -217,48 +244,51 @@ public class OpenAir
                     String s = line.substring(4).replaceAll(" ", "");  // kill spaces
                     String slat = s.split("[NS]")[0];
                     String slon = s.split("[NS]")[1].split("[EW]")[0];
-                    arcLat = UNavigation.DMStoD(slat); if (s.contains("S")) arcLat = -arcLat;
-                    arcLon = UNavigation.DMStoD(slon); if (s.contains("W")) arcLon = -arcLon;
+                    arcLat = UNavigation.DMStoD(slat);
+                    if (s.contains("S")) arcLat = -arcLat;
+                    arcLon = UNavigation.DMStoD(slon);
+                    if (s.contains("W")) arcLon = -arcLon;
                 }
 
-
-
-                /*if (filetype == AirspaceFileType.UNKNOWN) {
+/*
+                if (filetype == AirspaceFileType.UNKNOWN) {
                     filetype = GlobalMembers.DetectFileType(line);
-                    if (filetype == AirspaceFileType.UNKNOWN) {
-                        continue;
-                    }
-                }*/
+                }
+*/
 
                 // Parse the line
-                /*if (filetype == AirspaceFileType.OPENAIR) {
+/*
+                if (filetype == AirspaceFileType.OPENAIR) {
                     tangible.RefObject<String> tempRef_line = new tangible.RefObject<String>(line);
-                    if (!GlobalMembers.ParseLine(airspaces, tempRef_line, temp_area) && !GlobalMembers.ShowParseWarning(line_num, line, operation)) {
+                    if (!GlobalMembers.ParseLine(airspaces, tempRef_line, temp_area)
+                            && !GlobalMembers.ShowParseWarning(line_num, line, operation)) {
                         line = tempRef_line.argValue;
                         return false;
-                    }
-                    else {
+                    } else {
                         line = tempRef_line.argValue;
                     }
-                /}
+                }
+*/
 
-
-                /*if (filetype == AirspaceFileType.TNP) {
+/*
+                if (filetype == AirspaceFileType.TNP) {
                     StringParser<Byte> input = new StringParser<Byte>(line);
                     tangible.RefObject<Boolean> tempRef_ignore = new tangible.RefObject<Boolean>(ignore);
-                    if (!GlobalMembers.ParseLineTNP(airspaces, input, temp_area, tempRef_ignore) && !GlobalMembers.ShowParseWarning(line_num, line, operation)) {
+                    if (!GlobalMembers.ParseLineTNP(airspaces, input, temp_area, tempRef_ignore)
+                            && !GlobalMembers.ShowParseWarning(line_num, line, operation)) {
                         ignore = tempRef_ignore.argValue;
                         return false;
-                    }
-                    else {
+                    } else {
                         ignore = tempRef_ignore.argValue;
                     }
-                }*/
-
+                }
+*/
                 // Update the ProgressDialog
-                //if ((line_num & 0xff) == 0) {
-                //    operation.SetProgressPosition(reader.Tell() * 1024 / file_size);
-                //}
+/*
+                if ((line_num & 0xff) == 0) {
+                    operation.SetProgressPosition(reader.Tell() * 1024 / file_size);
+                }
+*/
             }
             // Add the very last rec
             if (rec != null) airspacelst.add(rec);
@@ -268,12 +298,12 @@ public class OpenAir
             e.printStackTrace();
         }
 
-
-        /*
+/*
         if (filetype == AirspaceFileType.UNKNOWN) {
-            operation.SetErrorMessage(_("Unknown airspace filetype"));
+            operation.SetErrorMessage(("Unknown airspace filetype"));
             return false;
-        }*/
+        }
+*/
 
         // Process final area (if any)
         //temp_area.AddPolygon(airspaces);
@@ -281,25 +311,14 @@ public class OpenAir
 
         return true;
     }
-    // ------------------------------------------ */
-
-    //
-    // Contructor
-    //
-    public OpenAir(Context context)
-    {
-        this.context = context;
-        airspacelst = new ArrayList();
-    }
-
 
     public void loadDatabase(float lat, float lon)
     {
         region = getRegionDatabaseName(lat, lon);
         if (!region.equals(_region))
             loadDatabase(region);
-            _region = region;
-        }
+        _region = region;
+    }
 
     public void loadDatabase(String database)
     {
@@ -318,44 +337,17 @@ public class OpenAir
         }
     }
 
-
-
-    public static ArrayList<OpenAirRec> getAptSelect(float lat, float lon, int range, int nr)
-    {
-        //ArrayList<Apt> nearestAptList = null;
-        ArrayList<OpenAirRec> nearestAptList = new ArrayList();
-
-        Iterator<OpenAirRec> it = airspacelst.iterator();
-        while (it.hasNext()) {
-            OpenAirRec currProduct = it.next();
-
-            // add code to determine  the <nr> apts in range
-            double deltaLat = lat - currProduct.clat;
-            double deltaLon = lon - currProduct.clon;
-            //double d =  Math.hypot(deltaLon, deltaLat);  // in degree, 1 deg = 60 nm
-            double d = Math.sqrt(deltaLon * deltaLon + deltaLat * deltaLat);  // faster then hypot, see www
-
-            if (d < range) {
-                nearestAptList.add(currProduct);
-            }
-        }
-        return nearestAptList;
-    }
-
     private void printProducts(ArrayList<OpenAirRec> list)
     {
         String content = "";
-        Iterator<OpenAirRec> it = list.iterator();
-        while (it.hasNext()) {
-            OpenAirRec currProduct = it.next();
+        for (OpenAirRec currProduct : list) {
             //content = content + "\nName :" + currProduct.name + "\n";
             //content = content + "Cmt :" + currProduct.cmt + "\n";
             //content = content + "Color :" +  currProduct.wpt + "n";
             System.out.println(content);
         }
         //Log.v("b2", "b2 - " + content);
-        //TextView display = (TextView)findViewById(R.id.info);
+        //TextView display = (TextView) findViewById(R.id.info);
         //display.setText(content);
     }
 }
-

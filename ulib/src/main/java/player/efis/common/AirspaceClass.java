@@ -1,8 +1,5 @@
 package player.efis.common;
 
-import java.util.*;
-
-
 enum AirspaceClass_t
 {
     CLASSA,

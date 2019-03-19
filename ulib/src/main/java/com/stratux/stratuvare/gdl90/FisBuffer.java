@@ -11,14 +11,12 @@ Redistribution and use in source and binary forms, with or without modification,
 */
 package com.stratux.stratuvare.gdl90;
 
-import java.util.LinkedList;
-
 import com.stratux.stratuvare.utils.Logger;
 
+import java.util.LinkedList;
+
 /**
- * 
  * @author zkhan
- *
  */
 public class FisBuffer {
 
@@ -28,9 +26,8 @@ public class FisBuffer {
     private float mLon;
     private int mTisbSiteID;
     private LinkedList<Product> mProducts;
-    
+
     /**
-     * 
      * @param buffer
      * @param offset
      * @param slotId
@@ -42,64 +39,67 @@ public class FisBuffer {
     public FisBuffer(byte buffer[], int offset, int slotId, int fisbId, boolean pvalid, float lat, float lon, int tisbSiteID) {
         mSize = 424;
         mBuffer = buffer;
-        mProducts = new LinkedList<Product>();
+        mProducts = new LinkedList<>();
         mBuffer = new byte[mSize];
         mLat = lat;
         mLon = lon;
         mTisbSiteID = tisbSiteID;
         System.arraycopy(buffer, offset, mBuffer, 0, mSize);
     }
-    
+
     /**
      * Parse products out of the Fis
      */
     public void makeProducts() {
         int i = 0;
-        while(i < (mSize - 1)) {
-            
-            int iFrameLength = (((int)mBuffer[i]) & 0xFF) << 1;
-            iFrameLength += (((int)mBuffer[i + 1]) & 0x80) >> 7;
-            
-            if(0 == iFrameLength) {
+        while (i < (mSize - 1)) {
+
+            int iFrameLength = (((int) mBuffer[i]) & 0xFF) << 1;
+            iFrameLength += (((int) mBuffer[i + 1]) & 0x80) >> 7;
+
+            if (0 == iFrameLength) {
                 break;
             }
-            
-            int frameType = (((int)mBuffer[i + 1]) & 0x0F);
-            
+
+            int frameType = (((int) mBuffer[i + 1]) & 0x0F);
+
             /*
              * Bad frame, or reserved frame ! = 0
              */
-            if((i + 2 + iFrameLength) > mSize || frameType != 0) {
+            if ((i + 2 + iFrameLength) > mSize || frameType != 0) {
                 break;
             }
-            
+
             Fis f = new Fis(frameType, mBuffer, i + 2, iFrameLength);
-            
+
             try {
-	            Product p = ProductFactory.buildProduct(f.mBuffer);
-	            mProducts.add(p);
+                Product p = ProductFactory.buildProduct(f.mBuffer);
+                mProducts.add(p);
+            } catch (ArrayIndexOutOfBoundsException e) {
+                //XXX: Skip for now buffer parsing overflow errors
+                Logger.Logit("Error parsing FIS product, buffer overflow! Please report this issue (specify ADSB unit type)");
             }
-            catch (ArrayIndexOutOfBoundsException e) {
-            	//XXX: Skip for now buffer parsing overflow errors
-            	Logger.Logit("Error parsing FIS product, buffer overflow! Please report this issue (specify ADSB unit type)");
-            }
-            
+
             i += iFrameLength + 2;
         }
     }
-    
+
     /**
-     * 
      * @return
      */
     public LinkedList<Product> getProducts() {
         return mProducts;
     }
+
     public float getLat() {
         return mLat;
     }
+
     public float getLon() {
         return mLon;
     }
-    public int getTISid() { return mTisbSiteID; }
+
+    public int getTISid() {
+        return mTisbSiteID;
+    }
 }

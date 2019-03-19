@@ -18,7 +18,8 @@ package player.ulib;
 
 import android.text.format.Time;
 
-public class UTime {
+public class UTime
+{
 
     //-------------------------------------------------------------------------
     // Return the Unixtime for UTC in milliseconds
@@ -30,10 +31,6 @@ public class UTime {
     {
         Time tm = new Time();
         tm.setToNow();
-        return (tm.toMillis(true) - tm.gmtoff*1000);
+        return (tm.toMillis(true) - tm.gmtoff * 1000);
     }
-    
-    
-
-
 }

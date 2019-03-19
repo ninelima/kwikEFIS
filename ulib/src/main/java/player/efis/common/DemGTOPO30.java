@@ -17,12 +17,15 @@
 package player.efis.common;
 
 // Standard imports
+
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.widget.Toast;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 
 /*
@@ -46,36 +49,26 @@ a
 
 public class DemGTOPO30
 {
-    Context context;
-    public String region = "null.null";
-
     public final static float DEM_HORIZON = 20; // nm
-
+    public static final int BUFX = 600;   //800 = 400nm square ie at least  200nm in each direction
+    public static final int BUFY = BUFX;
+    static final int MAX_ELEV = 6000;  // in meters
+    public static short buff[][] = new short[BUFX][BUFY];
+    public static boolean demDataValid = false;
+    public static float gamma = 1;
+    static DemColor colorTbl[] = new DemColor[MAX_ELEV];  // 600*3 = r*3
+    static float demTopLeftLat = -10;
+    static float demTopLeftLon = +100;
+    static private int x0;   // center of the BUFX tile
+    static private int y0;   // center of the BUFX tile
     final int maxcol = 4800;
     final int maxrow = 6000;
     final int TILE_WIDTH = 40;     // width in degrees, must be integer
     final int TILE_HEIGHT = 50;    // height in degrees, must be integer
-
-    public static final int BUFX = 600;   //800 = 400nm square ie at least  200nm in each direction
-    public static final int BUFY = BUFX;
-
-    static final int MAX_ELEV = 6000;  // in meters
-
-    public static short buff[][] = new short[BUFX][BUFY];
-    static DemColor colorTbl[] = new DemColor[MAX_ELEV];  // 600*3 = r*3
-
-    static float demTopLeftLat = -10;
-    static float demTopLeftLon = +100;
-
-    static private int x0;   // center of the BUFX tile
-    static private int y0;   // center of the BUFX tile
-
+    public String region = "null.null";
     public float lat0;
     public float lon0;
-
-    public static boolean demDataValid = false;
-
-    public static float gamma = 1;
+    Context context;
 
     //-------------------------------------------------------------------------
     // Construct a new default loader with no flags set
@@ -131,7 +124,67 @@ public class DemGTOPO30
         if (c < MAX_ELEV)
             return colorTbl[c];
         else
-            return colorTbl[MAX_ELEV-1];
+            return colorTbl[MAX_ELEV - 1];
+    }
+
+    private static DemColor calcHSVColor(short c)
+    {
+
+        int r = 600;  // 600m=2000ft
+        int MaxColor = 128;
+        float hsv[] = {0, 0, 0};
+        int colorBase;
+        int min_v = 25;
+
+        int v = MaxColor * c / r;
+
+        if (v > 3 * MaxColor) {
+            // mountain
+            v %= MaxColor;
+            colorBase = Color.rgb(MaxColor - v, MaxColor, MaxColor);
+        } else if (v > 2 * MaxColor) {
+            // highveld
+            v %= MaxColor;
+            colorBase = Color.rgb(MaxColor, MaxColor, v); // keep building to white
+        } else if (v > MaxColor) {
+            // inland
+            v %= MaxColor;
+            colorBase = Color.rgb(v, MaxColor, 0);
+        } else if (v > 0) {
+            // coastal plain
+            if (v > min_v)
+                colorBase = Color.rgb(0, v, 0);
+            else {
+                // close to the sea (lower than 25m),
+                // is a special case otherwise it gets too dark
+                colorBase = Color.rgb(min_v - v, min_v + (min_v - v), min_v - v);
+            }
+        } else {
+            // the ocean
+            colorBase = Color.rgb(0, 0, MaxColor); //bright blue ocean
+        }
+
+        // this allows us to adjust hue, sat and val
+        Color.colorToHSV(colorBase, hsv);
+        hsv[0] = hsv[0];  // hue 0..360
+        hsv[1] = hsv[1];  // sat 0..1
+        hsv[2] = hsv[2];  // val 0..1
+
+        if (hsv[2] > 0.25) {
+            hsv[0] = hsv[0] - ((hsv[2] - 0.25f) * 60);  // adjust the hue max 15%,  hue 0..360
+            hsv[2] = 0.30f; // clamp the value, val 0..1
+        }
+
+        /*
+        On HSV model, H (hue) define the base color, S (saturation) control the amount of gray
+        and V controls the brightness. So, if you enhance V and decrease S at same time, you gets
+        more luminance
+        */
+        hsv[1] = hsv[1] / gamma;  // sat 0..1
+        hsv[2] = hsv[2] * gamma;  // val 0..1
+
+        int color = Color.HSVToColor(hsv);
+        return new DemColor((float) Color.red(color) / 255, (float) Color.green(color) / 255, (float) Color.blue(color) / 255);
     }
 
     //-----------------------------
@@ -145,9 +198,7 @@ public class DemGTOPO30
 
         final float r = 600; // Earth mean terrain elevation is 840m
         final float max = 0.5f;
-        final float max_red = max;
         final float max_green = max * 0.587f;
-        final float max_blue = max;
         final float min_green = 0.2f;
 
         // elevated terrain
@@ -194,73 +245,7 @@ public class DemGTOPO30
 
         return new DemColor((float) Color.red(color) / 255, (float) Color.green(color) / 255, (float) Color.blue(color) / 255);
     }
-
-
-    private static DemColor calcHSVColor(short c)
-    {
-
-        int r = 600;  // 600m=2000ft
-        int MaxColor = 128;
-        float hsv[] = {0, 0, 0};
-        int colorBase;
-        int min_v = 25;
-
-        int v = MaxColor * c / r;
-
-        if (v > 3 * MaxColor) {
-            // mountain
-            v %= MaxColor;
-            colorBase = Color.rgb(MaxColor - v, MaxColor, MaxColor);
-        }
-        else if (v > 2 * MaxColor) {
-            // highveld
-            v %= MaxColor;
-            colorBase = Color.rgb(MaxColor, MaxColor, v); // keep building to white
-        }
-        else if (v > 1 * MaxColor) {
-            // inland
-            v %= MaxColor;
-            colorBase = Color.rgb(v, MaxColor, 0);
-        }
-        else if (v > 0) {
-            // coastal plain
-            if (v > min_v)
-                colorBase = Color.rgb(0, v, 0);
-            else {
-                // close to the sea (lower than 25m),
-                // is a special case otherwise it gets too dark
-                colorBase = Color.rgb(min_v - v, min_v + (min_v - v), min_v - v);
-            }
-        }
-        else {
-            // the ocean
-            colorBase = Color.rgb(0, 0, MaxColor); //bright blue ocean
-        }
-
-        // this allows us to adjust hue, sat and val
-        Color.colorToHSV(colorBase, hsv);
-        hsv[0] = hsv[0];  // hue 0..360
-        hsv[1] = hsv[1];  // sat 0..1
-        hsv[2] = hsv[2];  // val 0..1
-
-        if (hsv[2] > 0.25) {
-            hsv[0] = hsv[0] - ((hsv[2] - 0.25f) * 60);  // adjust the hue max 15%,  hue 0..360
-            hsv[2] = 0.30f; // clamp the value, val 0..1
-        }
-
-        /*
-        On HSV model, H (hue) define the base color, S (saturation) control the amount of gray
-        and V controls the brightness. So, if you enhance V and decrease S at same time, you gets
-        more luminance
-        */
-        hsv[1] = hsv[1]/gamma;  // sat 0..1
-        hsv[2] = hsv[2]*gamma;  // val 0..1
-
-        int color = Color.HSVToColor(hsv);
-        return new DemColor((float) Color.red(color) / 255, (float) Color.green(color) / 255, (float) Color.blue(color) / 255);
-    }
     //-----------------------------
-
 
     public void setBufferCenter(float lat, float lon)
     {
@@ -279,10 +264,11 @@ public class DemGTOPO30
         demTopLeftLat = 90 - (int) (90 - lat) / TILE_HEIGHT * TILE_HEIGHT;
         demTopLeftLon = -180 + (int) (lon + 180) / TILE_WIDTH * TILE_WIDTH;
 
-        String sTile = String.format("%c%03d%c%02d", demTopLeftLon < 0 ? 'W' : 'E', (int) Math.abs(demTopLeftLon),
-                demTopLeftLat < 0 ? 'S' : 'N', (int) Math.abs(demTopLeftLat));
-
-        return sTile;
+        return String.format("%c%03d%c%02d",
+                demTopLeftLon < 0 ? 'W' : 'E',
+                (int) Math.abs(demTopLeftLon),
+                demTopLeftLat < 0 ? 'S' : 'N',
+                (int) Math.abs(demTopLeftLat));
 
     }
 
@@ -306,24 +292,23 @@ public class DemGTOPO30
             sRegion = "pan.arg";
         }
         else if ((lat <= 20) && (lon > -20)
-              && (lat > -10)) {
+                && (lat > -10)) {
             sRegion = "sah.jap";
         }
 
         return sRegion;
     }
 
-
     //-------------------------------------------------------------------------
     // Fill the entire with a single value
     //
     private void fillBuffer(short c)
     {
-            for (int y = 0; y < BUFY; y++) {
-                for (int x = 0; x < BUFX; x++) {
-                    buff[x][y] = c;  // fill in the buffer
-                }
+        for (int y = 0; y < BUFY; y++) {
+            for (int x = 0; x < BUFX; x++) {
+                buff[x][y] = c;  // fill in the buffer
             }
+        }
     }
 
     //-------------------------------------------------------------------------
@@ -332,9 +317,7 @@ public class DemGTOPO30
     private boolean isValidLocation(float lat, float lon)
     {
         if (Math.abs(lat) > 90) return false;
-        if (Math.abs(lon) > 180) return false;
-
-        return true;
+        return !(Math.abs(lon) > 180);
     }
 
     //-------------------------------------------------------------------------
@@ -342,13 +325,10 @@ public class DemGTOPO30
     //
     public boolean isOnTile(float lat, float lon)
     {
-        if ((lat <= demTopLeftLat)
+        return (lat <= demTopLeftLat)
                 && (lat > demTopLeftLat - TILE_HEIGHT)
                 && (lon >= demTopLeftLon)
-                && (lon < demTopLeftLon + TILE_WIDTH)
-                ) return true;
-        else
-            return false;
+                && (lon < demTopLeftLon + TILE_WIDTH);
     }
 
     //-------------------------------------------------------------------------
@@ -370,7 +350,7 @@ public class DemGTOPO30
     public void loadDemBuffer(float lat, float lon)
     {
         demDataValid = false;
-        
+
         // Automatic region determination with getRegionDatabaseName
         //   not 100% sure if this is such a good idea. It works but there
         //   are may be some some unintended behaviour. For now leave the code,
@@ -380,8 +360,9 @@ public class DemGTOPO30
         setBufferCenter(lat, lon);
 
         // Check to see if player.efis.data.nnn.mmm (datapac) is installed
-        if (isAppInstalledOrNot("player.efis.data." + region) == false) {
-            Toast.makeText(context, "DataPac (player.efis.data." + region + ") not installed.\nSynthetic vision not available",Toast.LENGTH_LONG).show();
+        if (!isAppInstalledOrNot("player.efis.data." + region)) {
+            Toast.makeText(context, "DataPac (player.efis.data."
+                    + region + ") not installed.\nSynthetic vision not available", Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -390,22 +371,24 @@ public class DemGTOPO30
             fillBuffer((short) 0);
 
             try {
-                // We have 3 possible mechnisms for data. Leave them commented out  
+                // We have 3 possible mechanisms for data. Leave them commented out
                 // here as a reference for later. 
-                /*
+/*
                 // read from local directory "/data/ ...
                 File storage = Environment.getExternalStorageDirectory();
                 File file = new File(storage + "/data/player.efis.pfd/terrain/" + DemFilename + ".DEM");
-                FileInputStream inp = new  FileInputStream(file);
+                FileInputStream inp = new FileInputStream(file);
                 DataInputStream demFile = new DataInputStream(inp);
-                //*/
+                //
+*/
 
-                /*
+/*
                 // read from local "assets"
                 InputStream inp = context.getAssets().open("terrain/" + DemFilename + ".DEM");
                 DataInputStream demFile = new DataInputStream(inp);
-                //*/
-                
+                //
+*/
+
                 // read from a datapac "assets"
                 Context otherContext = context.createPackageContext("player.efis.data." + region, 0);
                 InputStream inp = otherContext.getAssets().open("terrain/" + DemFilename + ".DEM");

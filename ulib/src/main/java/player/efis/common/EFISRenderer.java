@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (C) 2016 Player One
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,24 +16,25 @@
 
 package player.efis.common;
 
-import java.util.Iterator;
-import java.util.LinkedList;
-
-import player.gles20.Line;
-import player.gles20.PolyLine;
-import player.gles20.Polygon;
-import player.gles20.Square;
-import player.gles20.Triangle;
-import player.ulib.*;
-
-import player.gles20.GLText;
-
 import android.content.Context;
 import android.opengl.GLES20;
 import android.util.Log;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.LinkedList;
+
+import player.gles20.GLText;
+import player.gles20.Line;
+import player.gles20.PolyLine;
+import player.gles20.Polygon;
+import player.gles20.Square;
+import player.gles20.Triangle;
+import player.ulib.UMath;
+import player.ulib.UNavigation;
+import player.ulib.UTrig;
+import player.ulib.Unit;
 
 
 /**
@@ -48,13 +49,11 @@ import org.json.JSONObject;
 abstract public class EFISRenderer
 {
     private static final String TAG = "EFISRenderer";
-
-    protected Triangle mTriangle;
-    protected Square mSquare;
-    protected Line mLine;
-    protected PolyLine mPolyLine;
-    protected Polygon mPolygon;
-
+    //-------------------------------------------------------------------------
+    // Map Zooming
+    //
+    public final float MAX_ZOOM = 120;
+    public final float MIN_ZOOM = 5;
     // mMVPMatrix is an abbreviation for "Model View Projection Matrix"
     protected final float[] mMVPMatrix = new float[16];
     protected final float[] mProjectionMatrix = new float[16];
@@ -62,9 +61,31 @@ abstract public class EFISRenderer
     protected final float[] mRotationMatrix = new float[16];
     protected final float[] mFdRotationMatrix = new float[16];  // for Flight Director
     protected final float[] mRmiRotationMatrix = new float[16]; // for RMI / Compass Rose
-
-    private float mAngle;
-
+    //
+    // Variables specific to render APT
+    //
+    protected final int MX_APT_SEEK_RNG = 99;
+    protected final int MX_NR_APT = 20;
+    public float pitchTranslation;    // Pitch amplified by 1/2 window pixels for use by glTranslate
+    public int AGLValue;              // Altitude above ground, AGL
+    public boolean displayMirror;
+    public layout_t Layout = layout_t.LANDSCAPE;
+    public String mWptSelName = "ZZZZ";
+    public String mWptSelComment = "Null Island";
+    public float mWptSelLat = 00f;
+    public float mWptSelLon = 00f;
+    public float mAltSelValue = 0;
+    public String mAltSelName = "00000";
+    public float mObsValue;
+    public boolean fatFingerActive = false;
+    public float commandPitch;
+    public float commandRoll;
+    public float mMapZoom = 20; // Zoom multiplier for map. 1 (max out) to 200 (max in)
+    protected Triangle mTriangle;
+    protected Square mSquare;
+    protected Line mLine;
+    protected PolyLine mPolyLine;
+    protected Polygon mPolygon;
     // OpenGL
     protected int pixW;
     protected int pixH;               // Width & Height of window in pixels
@@ -73,60 +94,28 @@ abstract public class EFISRenderer
     protected int pixM;               // The smallest dimension of pixH or pixM
     protected int pixM2;              // The smallest dimension of pixH2 or pixM2
     protected float zfloat;           // A Z to use for layering of ortho projected markings*/
-
     // Artificial Horizon
     protected float pitchInView;      // The degrees pitch to display above and below the lubber line
-    private float pitch, roll;        // Pitch and roll in degrees
-    public float pitchTranslation;    // Pitch amplified by 1/2 window pixels for use by glTranslate
     protected float rollRotation;     // Roll converted for glRotate
     // Airspeed Indicator
     protected float IASInView;        // The indicated units to display above the center line
-
     //private int   IASValue;         // Indicated Airspeed
     protected float IASValue;         // Indicated Airspeed, in knots
     protected float IASTranslation;   // Value amplified by 1/2 window pixels for use by glTranslate
-
-    // The following should be read from a calibration file by an init routine
-    private int IASMaxDisp;           // The highest speed to show on tape
-
     // Altimeter
     protected float MSLInView;        // The indicated units to display above the center line
     protected int MSLValue;           // Altitude above mean sea level, MSL in feet
     protected float MSLTranslation;   // Value amplified by 1/2 window pixels for use by glTranslate
-    private float baroPressure;       // Barometric pressure in in-Hg
-    public int AGLValue;              // Altitude above ground, AGL
-
     // The following should be read from a calibration file by an init routine
     protected int MSLMinDisp;         // The lowest altitude to show on tape
     protected int MSLMaxDisp;         // The highest altitude to show on tape
-
-    // VSI
-    private float VSIInView;          // Vertical speed to display above the centerline
-    private int VSIValue;             // Vertical speed in Feet/minute
-    private float VSINeedleAngle;     // The angle to set the VSI needle
-
-    //DI
-    private float DIInView;           // The indicated units to display above the center line
     protected float DIValue;          // Direction Indicator / Compass, in degrees
-    private float SlipValue;          // was int
-    private float BatteryPct;         // Battery usage
-    private float GForceValue;        // G force
-    private float GSValue;
-    private float ROTValue;           // Rate Of Turn
-    private float DITranslation;      // Value amplified by 1/2 window pixels for use by glTranslate
-
     // Geographic Coordinates
     protected float LatValue;        // Latitude
     protected float LonValue;        // Longitude
-
-    //FPV - Flight Path Vector
-    private float fpvX;              // Flight Path Vector X
-    private float fpvY;              // Flight Path Vector Y
-
     //Flight Director
     protected float FDTranslation;           // = -6 / pitchInView  * pixM2;  // command 6 deg pitch up
     protected float FDRotation;              // = 20;  // command 20 deg roll
-
     // Onscreen elements
     protected boolean displayInfoPage;       // Display The Ancillary Information
     protected boolean displayFlightDirector; // Display Flight Director
@@ -134,13 +123,11 @@ abstract public class EFISRenderer
     protected boolean displayHITS;           // Display the Highway In The Sky
     protected boolean displayDEM;            // Display the DEM terrain
     protected boolean autoZoomActive;
-
     // 3D map display
     protected boolean displayAirport = true;
     protected boolean displayAirspace;
     protected boolean displayAHColors;
     protected boolean displayTape;
-    public boolean displayMirror;
     protected boolean displayFPV;
 
     protected boolean ServiceableDevice;  // Flag to indicate no faults
@@ -151,45 +138,107 @@ abstract public class EFISRenderer
     protected boolean ServiceableRose;    // Flag to indicate Rose failure
 
     protected boolean bBannerActive;      // Banner message
-    private String sBannerMsg;             // Flag to control banner display
-
-    private float mX, mY;                          // keypress location
-
     protected float portraitOffset = 0.40f;  // the magic number for portrait offset
-
     //Demo Modes
     protected boolean bSimulatorActive;
-    private String sDemoMsg;
-
     protected GLText glText;      // A GLText Instance
     protected Context context;    // Context (from Activity)
-
     // Colors
     protected float tapeShadeR = 0.600f; // grey
     protected float tapeShadeG = 0.600f; // grey
     protected float tapeShadeB = 0.600f; // grey
-
     protected float foreShadeR = 0.999f; // white
     protected float foreShadeG = 0.999f; // white
     protected float foreShadeB = 0.999f; // white
-
     protected float backShadeR = 0.001f; // black
     protected float backShadeG = 0.001f; // black
     protected float backShadeB = 0.001f; // black
-
     protected int colorTheme;
-
-    private float gamma = 1;     // Describe gamma
     protected float theta = 1;   // Describe theta
+    protected float[] scratch1 = new float[16];  // moved to class scope
+    protected float[] scratch2 = new float[16];  // moved to class scope
+    protected float[] altMatrix = new float[16]; // moved to class scope
+    protected float[] iasMatrix = new float[16]; // moved to class scope
+    protected float[] fdMatrix = new float[16];  // moved to class scope
+    protected float[] rmiMatrix = new float[16]; // moved to class scope
+    protected float PPD_DIV = 30; // for landscape
+    protected int AptSeekRange = 20;   // start with 20nm
+    protected int Aptscounter = 0;
+    protected int nrAptsFound;
+    protected int nrAirspaceFound;
+    protected String mAutoWpt = "ZZZZ";
+    protected float mSelWptRlb;           // Selected waypoint Relative bearing
+    protected float mSelWptDme;           // Selected waypoint Dme distance (nm)
+    //
+    // Display all the relevant auto wpt information with
+    // A combo function to replace the individual ones
+    //
+    protected float lineAutoWptDetails;  // Auto Wpt - Set in onSurfaceChanged
+    //-------------------------------------------------------------------------
+    // Display all the relevant ancillary device information with
+    // A combo function to replace the individual ones
+    //
+    protected float lineAncillaryDetails;  // Ancillary Details - Set in onSurfaceChanged
+    protected float leftC = 0.6f;   // Selected Wpt
+    protected float lineC;          // Selected Wpt - Set in onSurfaceChanged
+    protected float selWptDec;
+    protected float selWptInc;
+    protected float spinnerStep = 0.10f;    // spacing between the spinner buttons
+    protected float spinnerTextScale = 1;
+
+    //-------------------------------------------------------------------------
+    // Flight Director
+    //
+
+    //        mTriangle.SetColor(foreShadeR, foreShadeG, 0/*backShadeB*/, 1); //light yellow
+    protected float selAltInc;
+    protected float selAltDec;
+    protected float roseScale;
+    protected float roseTextScale;
+    int FrameCounter = 0;
+    private float mAngle;
+    private float pitch, roll;        // Pitch and roll in degrees
+    // The following should be read from a calibration file by an init routine
+    private int IASMaxDisp;           // The highest speed to show on tape
+    private float baroPressure;       // Barometric pressure in in-Hg
+    // VSI
+    private float VSIInView;          // Vertical speed to display above the centerline
+    private int VSIValue;             // Vertical speed in Feet/minute
+    private float VSINeedleAngle;     // The angle to set the VSI needle
+    //DI
+    private float DIInView;           // The indicated units to display above the center line
+    private float SlipValue;          // was int
+    private float BatteryPct;         // Battery usage
+    private float GForceValue;        // G force
+    private float GSValue;
+    private float ROTValue;           // Rate Of Turn
+    private float DITranslation;      // Value amplified by 1/2 window pixels for use by glTranslate
+    //FPV - Flight Path Vector
+    private float fpvX;              // Flight Path Vector X
+    private float fpvY;              // Flight Path Vector Y
 
 
-    public enum layout_t
-    {
-        PORTRAIT,
-        LANDSCAPE
-    }
-
-    public layout_t Layout = layout_t.LANDSCAPE;
+    //---------------------------------------------------------------------------
+    // EFIS serviceability ... aka the Red X's
+    //
+    private String sBannerMsg;             // Flag to control banner display
+    private String sDemoMsg;
+    private float gamma = 1;     // Describe gamma
+    //
+    // Traffic targets
+    //
+    private StratuxWiFiTask mStratux;
+    private String mActiveDevice = "NONE";
+    private float mAutoWptBrg;
+    private float mSelWptBrg;             // Selected waypoint Bearing
+    private String mGpsStatus; // = "GPS: 10 / 11";
+    //-------------------------------------------------------------------------
+    //
+    // Auto Waypoint handlers
+    //
+    //-------------------------------------------------------------------------
+    private float mAutoWptDme;
+    private float mAutoWptRlb;
 
     public EFISRenderer(Context context)
     {
@@ -216,29 +265,13 @@ abstract public class EFISRenderer
 
     }
 
-    int FrameCounter = 0;
-    protected float[] scratch1 = new float[16];  // moved to class scope
-    protected float[] scratch2 = new float[16];  // moved to class scope
-    protected float[] altMatrix = new float[16]; // moved to class scope
-    protected float[] iasMatrix = new float[16]; // moved to class scope
-    protected float[] fdMatrix = new float[16];  // moved to class scope
-    protected float[] rmiMatrix = new float[16]; // moved to class scope
-
-    //-------------------------------------------------------------------------
-    // setSpinnerParams must be implemented in the child classes
-    //
-    protected void setSpinnerParams()
-    {
-    }
-
-
     //-------------------------------------------------------------------------
     // Utility method for debugging OpenGL calls. Provide the name of the call
     // just after making it:
-    // 
+    //
     // mColorHandle = GLES20.glGetUniformLocation(mProgram, "vColor");
     // MyGLRenderer.checkGlError("glGetUniformLocation");
-    // 
+    //
     // If the operation is not successful, the check throws an error.
     //
     // @param glOperation - Name of the OpenGL call to check.
@@ -250,6 +283,22 @@ abstract public class EFISRenderer
             Log.e(TAG, glOperation + ": glError " + error);
             throw new RuntimeException(glOperation + ": glError " + error);
         }
+    }
+
+    /*
+        protected void renderUnserviceableDevice(float[] matrix)
+        {
+            //renderUnserviceablePage(matrix);
+            renderUnserviceableDi(matrix);
+            renderUnserviceableAlt(matrix);
+            renderUnserviceableAsi(matrix);
+        }
+    */
+    //-------------------------------------------------------------------------
+    // setSpinnerParams must be implemented in the child classes
+    //
+    protected void setSpinnerParams()
+    {
     }
 
     //-------------------------------------------------------------------------
@@ -273,7 +322,7 @@ abstract public class EFISRenderer
         String s = sBannerMsg;
         glText.begin(1.0f, 0f, 0f, 1.0f, matrix); // Red
         glText.setScale(5.0f);
-        glText.drawCX(s, 0, pixM2/2);             // Draw  String
+        glText.drawCX(s, 0, pixM2 / 2);             // Draw  String
         glText.end();
     }
 
@@ -285,7 +334,7 @@ abstract public class EFISRenderer
 
     protected void renderSimulatorActive(float[] matrix)
     {
-        String s = sDemoMsg; 
+        String s = sDemoMsg;
         glText.begin(1.0f, 0f, 0f, 0.5f, matrix); // Red
         glText.setScale(9.0f);
         glText.drawCX(s, 0, 0);
@@ -297,14 +346,6 @@ abstract public class EFISRenderer
         bSimulatorActive = demo;
         sDemoMsg = msg;
     }
-
-    //-------------------------------------------------------------------------
-    // Flight Director
-    //
-
-    //        mTriangle.SetColor(foreShadeR, foreShadeG, 0/*backShadeB*/, 1); //light yellow
-
-    protected float PPD_DIV = 30; // for landscape
 
     protected void renderFlightDirector(float[] matrix)
     {
@@ -346,7 +387,6 @@ abstract public class EFISRenderer
         FDRotation = -rol; // rol = 20, command 20 deg roll
     }
 
-
     //-------------------------------------------------------------------------
     // Attitude Indicator
     //
@@ -361,82 +401,61 @@ abstract public class EFISRenderer
 
         // We might make this configurable in future
         // for now force it to false
-        if (false) {
-            // The lubber line - W style
-            mPolyLine.SetColor(1, 1, 0, 1);
-            mPolyLine.SetWidth(6);
+        // The lubber line - Flight Director style
+        // side lines
+        int B2 = 3;
+        mLine.SetWidth(2 * B2);
 
-            float[] vertPoly = {
-                    // in counter clockwise order:
-                    -6.0f * pixPerDegree, 0.0f, z,
-                    -4.0f * pixPerDegree, 0.0f, z,
-                    -2.0f * pixPerDegree, -2.0f * pixPerDegree, z,
-                    0.0f * pixPerDegree, 0.0f, z,
-                    2.0f * pixPerDegree, -2.0f * pixPerDegree, z,
-                    4.0f * pixPerDegree, 0.0f, z,
-                    6.0f * pixPerDegree, 0.0f, z
-            };
-            mPolyLine.VertexCount = 7;
-            mPolyLine.SetVerts(vertPoly);
-            mPolyLine.draw(mMVPMatrix);
-        }
-        else {
-            // The lubber line - Flight Director style
-            // side lines
-            int B2 = 3;
-            mLine.SetWidth(2 * B2);
+        if (colorTheme == 2) mLine.SetColor(0, foreShadeG, 0, 1);  // light green
+        else mLine.SetColor(1, 1, 0/*backShadeB*/, 1);  // hardcoded light yellow
 
-            if (colorTheme == 2) mLine.SetColor(0, foreShadeG, 0, 1);  // light green
-            else mLine.SetColor(1, 1, 0/*backShadeB*/, 1);  // hardcoded light yellow
+        mLine.SetVerts(11.0f * pixPerDegree, B2, z,
+                15.0f * pixPerDegree, B2, z);
+        mLine.draw(mMVPMatrix);
+        mLine.SetVerts(-11.0f * pixPerDegree, B2, z,
+                -15.0f * pixPerDegree, B2, z);
+        mLine.draw(mMVPMatrix);
 
-            mLine.SetVerts(11.0f * pixPerDegree, B2, z,
-                    15.0f * pixPerDegree, B2, z);
-            mLine.draw(mMVPMatrix);
-            mLine.SetVerts(-11.0f * pixPerDegree, B2, z,
-                    -15.0f * pixPerDegree, B2, z);
-            mLine.draw(mMVPMatrix);
+        if (colorTheme == 2) mLine.SetColor(0, tapeShadeG, 0, 1);  // dark green
+        else mLine.SetColor(tapeShadeR, tapeShadeG, 0, 1);  // dark yellow
+        mLine.SetVerts(11.0f * pixPerDegree, -B2, z,
+                15.0f * pixPerDegree, -B2, z);
+        mLine.draw(mMVPMatrix);
+        mLine.SetVerts(-11.0f * pixPerDegree, -B2, z,
+                -15.0f * pixPerDegree, -B2, z);
+        mLine.draw(mMVPMatrix);
 
-            if (colorTheme == 2) mLine.SetColor(0, tapeShadeG, 0, 1);  // dark green
-            else mLine.SetColor(tapeShadeR, tapeShadeG, 0, 1);  // dark yellow
-            mLine.SetVerts(11.0f * pixPerDegree, -B2, z,
-                    15.0f * pixPerDegree, -B2, z);
-            mLine.draw(mMVPMatrix);
-            mLine.SetVerts(-11.0f * pixPerDegree, -B2, z,
-                    -15.0f * pixPerDegree, -B2, z);
-            mLine.draw(mMVPMatrix);
+        // outer triangles
+        mTriangle.SetWidth(1);
+        if (colorTheme == 2) mTriangle.SetColor(0, foreShadeG, 0, 1);  // light green
+        else mTriangle.SetColor(1, 1, 0, 1); //hardcoded light yellow
 
-            // outer triangles
-            mTriangle.SetWidth(1);
-            if (colorTheme == 2) mTriangle.SetColor(0, foreShadeG, 0, 1);  // light green
-            else mTriangle.SetColor(1, 1, 0, 1); //hardcoded light yellow
+        mTriangle.SetVerts(0.0f * pixPerDegree, 0.0f * pixPerDegree, z,
+                6.0f * pixPerDegree, -3.0f * pixPerDegree, z,
+                10.0f * pixPerDegree, -3.0f * pixPerDegree, z);
+        mTriangle.draw(mMVPMatrix);
+        mTriangle.SetVerts(0.0f * pixPerDegree, 0.0f * pixPerDegree, z,
+                -10.0f * pixPerDegree, -3.0f * pixPerDegree, z,
+                -6.0f * pixPerDegree, -3.0f * pixPerDegree, z);
+        mTriangle.draw(mMVPMatrix);
 
-            mTriangle.SetVerts(0.0f * pixPerDegree, 0.0f * pixPerDegree, z,
-                    6.0f * pixPerDegree, -3.0f * pixPerDegree, z,
-                    10.0f * pixPerDegree, -3.0f * pixPerDegree, z);
-            mTriangle.draw(mMVPMatrix);
-            mTriangle.SetVerts(0.0f * pixPerDegree, 0.0f * pixPerDegree, z,
-                    -10.0f * pixPerDegree, -3.0f * pixPerDegree, z,
-                    -6.0f * pixPerDegree, -3.0f * pixPerDegree, z);
-            mTriangle.draw(mMVPMatrix);
+        // inner triangle
+        if (colorTheme == 2) mTriangle.SetColor(0, tapeShadeG, 0, 1);  // light green
+        else mTriangle.SetColor(0.6f, 0.6f, 0, 1); //hardcoded dark yellow
+        mTriangle.SetVerts(0.0f * pixPerDegree, 0.0f * pixPerDegree, z,
+                4.0f * pixPerDegree, -3.0f * pixPerDegree, z,
+                6.0f * pixPerDegree, -3.0f * pixPerDegree, z);
+        mTriangle.draw(mMVPMatrix);
+        mTriangle.SetVerts(0.0f * pixPerDegree, 0.0f * pixPerDegree, z,
+                -6.0f * pixPerDegree, -3.0f * pixPerDegree, z,
+                -4.0f * pixPerDegree, -3.0f * pixPerDegree, z);
+        mTriangle.draw(mMVPMatrix);
 
-            // inner triangle
-            if (colorTheme == 2) mTriangle.SetColor(0, tapeShadeG, 0, 1);  // light green
-            else mTriangle.SetColor(0.6f, 0.6f, 0, 1); //hardcoded dark yellow
-            mTriangle.SetVerts(0.0f * pixPerDegree, 0.0f * pixPerDegree, z,
-                    4.0f * pixPerDegree, -3.0f * pixPerDegree, z,
-                    6.0f * pixPerDegree, -3.0f * pixPerDegree, z);
-            mTriangle.draw(mMVPMatrix);
-            mTriangle.SetVerts(0.0f * pixPerDegree, 0.0f * pixPerDegree, z,
-                    -6.0f * pixPerDegree, -3.0f * pixPerDegree, z,
-                    -4.0f * pixPerDegree, -3.0f * pixPerDegree, z);
-            mTriangle.draw(mMVPMatrix);
-
-            // Center Triangle - Optional
-            //mTriangle.SetVerts(0.0f * pixPerDegree,  0.0f * pixPerDegree, z,
-            //		-4.0f * pixPerDegree, -2.0f * pixPerDegree, z,
-            //		 4.0f * pixPerDegree, -2.0f * pixPerDegree, z);
-            //mTriangle.draw(mMVPMatrix);
-        }
+        // Center Triangle - Optional
+        //mTriangle.SetVerts(0.0f * pixPerDegree, 0.0f * pixPerDegree, z,
+        //        -4.0f * pixPerDegree, -2.0f * pixPerDegree, z,
+        //        4.0f * pixPerDegree, -2.0f * pixPerDegree, z);
+        //mTriangle.draw(mMVPMatrix);
 
         // The fixed roll marker (roll circle marker radius is 15 degrees of pitch, with fixed markers on the outside)
         mTriangle.SetColor(foreShadeR, foreShadeG, 0.0f, 1); //yellow
@@ -463,7 +482,7 @@ abstract public class EFISRenderer
             mLine.draw(mMVPMatrix);
         }
         // 45 - even though it is only one number, leave the loop
-        // for consitency and possible changes
+        // for consistency and possible changes
         for (i = 45; i <= 60; i = i + 15) {
             sinI = UTrig.isin(i);
             cosI = UTrig.icos(i);
@@ -537,11 +556,11 @@ abstract public class EFISRenderer
     {
         int i;
         float innerTic, outerTic, z, pixPerDegree, iPix;
-        float wid = 4; 
+        float wid = 4;
         z = zfloat;
 
         if (Layout == layout_t.LANDSCAPE) {
-            pixPerDegree = pixM / pitchInView; 
+            pixPerDegree = pixM / pitchInView;
         }
         else {
             pixPerDegree = pixM / pitchInView * 100 / 60;
@@ -615,7 +634,7 @@ abstract public class EFISRenderer
 
         // horizon line - longer and thicker
         if (colorTheme == 2) mLine.SetColor(foreShadeR, foreShadeG, foreShadeB, 1);  // bright white
-        mLine.SetWidth(wid*2.5f); 
+        mLine.SetWidth(wid * 2.5f);
         mLine.SetVerts(-0.95f * pixW2, 0.0f, z,
                 0.95f * pixW2, 0.0f, z);
         mLine.draw(matrix);
@@ -691,11 +710,11 @@ abstract public class EFISRenderer
 			the ViewPort, it is drawn wide to deal with affect of the aspect ratio scaling and the corners during roll
 
 			The pitch range in degrees to be viewed must fit the ModelView units of 1. To accommodate this, the gyro must
-			be ovesized, hence the multiplier 90/ pitchInView.
+			be oversized, hence the multiplier 90/ pitchInView.
 		 */
 
         pixPitchViewMultiplier = 90.0f / pitchInView * pixH;
-        pixOverWidth = pixW2 * 1.80f; 
+        pixOverWidth = pixW2 * 1.80f;
         z = zfloat;
 
 
@@ -737,6 +756,10 @@ abstract public class EFISRenderer
 
     }
 
+    // This may be a different name?
+    //-------------------------------------------------------------------------
+    // Airports / Waypoints
+    //
 
     //-------------------------------------------------------------------------
     // Set the pitch angle
@@ -756,7 +779,6 @@ abstract public class EFISRenderer
         rollRotation = roll;
     }
 
-
     // TODO: use slide to position and get rid of the top/right vars
     //-------------------------------------------------------------------------
     // RadAlt Indicator (AGL)
@@ -766,8 +788,8 @@ abstract public class EFISRenderer
         float z = zfloat;
         String t;
 
-        float top = 0; 
-        float right = 0; 
+        float top = 0;
+        float right = 0;
         float left = right - 0.35f * pixM2;
 
 
@@ -805,7 +827,7 @@ abstract public class EFISRenderer
             // moving yellow chevrons
             mLine.SetColor(tapeShadeR, tapeShadeG, 0.0f, 0.5f); // yellow
 
-            mLine.SetWidth(8); 
+            mLine.SetWidth(8);
             for (i = left; i < right - (float) AGLValue / CevronAGL * (right - left) - step; i = i + step) {
                 mLine.SetVerts(
                         i, top + glText.getCharHeight(), z,
@@ -846,7 +868,7 @@ abstract public class EFISRenderer
         float margin;
 
         // draw the thousands digits larger
-        glText.setScale(3.5f);  
+        glText.setScale(3.5f);
         if (aglAlt >= 1000) glText.draw(t, left + 0.03f * pixM2, top - glText.getCharHeight() / 2);
         if (aglAlt < 10000)
             margin = 0.6f * glText.getCharWidthMax(); // because of the differing sizes
@@ -855,7 +877,7 @@ abstract public class EFISRenderer
 
         // draw the hundreds digits smaller
         t = String.format("%03.0f", (float) aglAlt % 1000);
-        glText.setScale(2.5f); 
+        glText.setScale(2.5f);
         glText.draw(t, left + 0.03f * pixM2 + margin, top - glText.getCharHeight() / 2);
         glText.end();
 
@@ -886,7 +908,7 @@ abstract public class EFISRenderer
         float z = zfloat;
         String t;
 
-        float right = 0; 
+        float right = 0;
         float left = right - 0.35f * pixM2;
         float apex = left - 0.05f * pixM2;
 
@@ -898,7 +920,7 @@ abstract public class EFISRenderer
 
         // Do a dummy glText so that the Heights are correct for the masking box
         glText.begin(foreShadeR, foreShadeG, foreShadeB, 1.0f, matrix); // white
-        glText.setScale(2.5f);  
+        glText.setScale(2.5f);
         glText.end();
 
         // Mask over the moving tape for the value display box
@@ -906,10 +928,10 @@ abstract public class EFISRenderer
         mSquare.SetWidth(2);
         {
             float[] squarePoly = {
-                    right, -glText.getCharHeight(), z, 
-                    right, glText.getCharHeight(), z,  
-                    left, glText.getCharHeight(), z,   
-                    left, -glText.getCharHeight(), z  
+                    right, -glText.getCharHeight(), z,
+                    right, glText.getCharHeight(), z,
+                    left, glText.getCharHeight(), z,
+                    left, -glText.getCharHeight(), z
             };
             mSquare.SetVerts(squarePoly);
             mSquare.draw(matrix);
@@ -923,7 +945,7 @@ abstract public class EFISRenderer
         float margin;
 
         // draw the thousands digits larger
-        glText.setScale(3.5f);  
+        glText.setScale(3.5f);
         if (mslAlt >= 1000) glText.draw(t, left + 0.03f * pixM2, -glText.getCharHeight() / 2);
         if (mslAlt < 10000)
             margin = 0.6f * glText.getCharWidthMax(); // because of the differing sizes
@@ -932,7 +954,7 @@ abstract public class EFISRenderer
 
         // draw the hundreds digits smaller
         t = String.format("%03.0f", (float) mslAlt % 1000);
-        glText.setScale(2.5f); 
+        glText.setScale(2.5f);
         glText.draw(t, left + 0.03f * pixM2 + margin, -glText.getCharHeight() / 2);
         glText.end();
 
@@ -1010,7 +1032,7 @@ abstract public class EFISRenderer
 
             // draw the hundreds digits smaller
             t = String.format("%03.0f", (float) i % 1000);
-            glText.setScale(2.0f); 
+            glText.setScale(2.0f);
             glText.draw(t, outerTic + margin, iPix - glText.getCharHeight() / 2);
             glText.end();
 
@@ -1042,6 +1064,10 @@ abstract public class EFISRenderer
         MSLTranslation = MSLValue / MSLInView * pixH2;
     }
 
+    //-------------------------------------------------------------------------
+    // Airports / Waypoints
+    //
+
     //
     //Set the barometric pressure
     //
@@ -1049,7 +1075,6 @@ abstract public class EFISRenderer
     {
         baroPressure = milliBar;
     }
-
 
     void renderFixedVSIMarkers(float[] matrix)
     {
@@ -1078,7 +1103,7 @@ abstract public class EFISRenderer
             mLine.draw(matrix);
 
             glText.begin(tapeShadeR, tapeShadeG, tapeShadeB, 1, matrix); // white
-            glText.setScale(1.5f); 
+            glText.setScale(1.5f);
             glText.draw(t, outerTic + glText.getCharWidthMax() / 2, iPix - glText.getCharHeight() / 2);
             glText.end();
 
@@ -1104,14 +1129,13 @@ abstract public class EFISRenderer
         mLine.draw(matrix);
     }
 
-
     //-------------------------------------------------------------------------
     // VSI Indicator
     //
     protected void renderVSIMarkers(float[] matrix)
     {
         int i;
-        float z, pixPerUnit, innerTic; 
+        float z, pixPerUnit, innerTic;
 
         pixPerUnit = 1.0f * pixM2 / VSIInView;
         z = zfloat;
@@ -1130,7 +1154,7 @@ abstract public class EFISRenderer
             if (i != 0) {
                 String s = Integer.toString(Math.abs(i));
                 glText.begin(tapeShadeR, tapeShadeG, tapeShadeB, 1.0f, matrix); // light grey
-                glText.setScale(3.0f);  
+                glText.setScale(3.0f);
                 glText.draw(s, innerTic - 1.5f * glText.getLength(s), i * 1000 * pixPerUnit - glText.getCharHeight() / 2);
                 glText.end();
             }
@@ -1145,7 +1169,6 @@ abstract public class EFISRenderer
         );
         mLine.draw(matrix);
     }
-
 
     //
     //Set the VSI - ft
@@ -1220,16 +1243,15 @@ abstract public class EFISRenderer
         }
         t = Integer.toString(Math.round(IASValue));
         glText.begin(foreShadeR, foreShadeG, foreShadeB, 1.0f, matrix);     // white
-        glText.setScale(3.5f);                       
+        glText.setScale(3.5f);
         glText.drawC(t, left + 0.25f * pixM2, glText.getCharHeight() / 2);
         glText.end();
     }
 
-
     protected void renderASIMarkers(float[] matrix)
     {
         int i, j;
-        float innerTic, midTic, outerTic; 
+        float innerTic, midTic, outerTic;
         float z, pixPerUnit, iPix;
 
         z = zfloat;
@@ -1253,7 +1275,7 @@ abstract public class EFISRenderer
             mLine.draw(matrix);
 
             glText.begin(tapeShadeR, tapeShadeG, tapeShadeB, 1.0f, matrix); // grey
-            glText.setScale(2.5f); 
+            glText.setScale(2.5f);
             glText.draw(t, outerTic - 1.5f * glText.getLength(t), iPix - glText.getCharHeight() / 2);
             glText.end();
 
@@ -1382,7 +1404,7 @@ abstract public class EFISRenderer
 
         // Do a dummy glText so that the Heights are correct for the masking box
         glText.begin(foreShadeR, foreShadeG, foreShadeB, 1.0f, matrix); // white
-        glText.setScale(2.5f); 
+        glText.setScale(2.5f);
         glText.end();
 
         // Mask over the moving tape for the value display box
@@ -1390,10 +1412,10 @@ abstract public class EFISRenderer
         mSquare.SetWidth(2);
         {
             float[] squarePoly = {
-                    right, - glText.getCharHeight(), z,
-                    right, + glText.getCharHeight(), z,
-                    left,  + glText.getCharHeight(), z,
-                    left,  - glText.getCharHeight(), z
+                    right, -glText.getCharHeight(), z,
+                    right, +glText.getCharHeight(), z,
+                    left, +glText.getCharHeight(), z,
+                    left, -glText.getCharHeight(), z
             };
             mSquare.SetVerts(squarePoly);
             mSquare.draw(matrix);
@@ -1403,17 +1425,17 @@ abstract public class EFISRenderer
             mPolyLine.SetColor(foreShadeR, foreShadeG, foreShadeB, 1); // white
             mPolyLine.SetWidth(2);
             float[] vertPoly = {
-                    right, + glText.getCharHeight(), z,
-                    left,  + glText.getCharHeight(), z,
-                    left,  - glText.getCharHeight(), z,
-                    right, - glText.getCharHeight(), z,
-                    right, + glText.getCharHeight(), z,
+                    right, +glText.getCharHeight(), z,
+                    left, +glText.getCharHeight(), z,
+                    left, -glText.getCharHeight(), z,
+                    right, -glText.getCharHeight(), z,
+                    right, +glText.getCharHeight(), z,
 
                     // for some reason this causes a crash on restart if there are not 8 vertexes
                     // most probably a a bug in PolyLine - b2 maye be fixed comma after last z
-                    left,  + glText.getCharHeight(), z,
-                    left,  - glText.getCharHeight(), z,
-                    right, - glText.getCharHeight(), z
+                    left, +glText.getCharHeight(), z,
+                    left, -glText.getCharHeight(), z,
+                    right, -glText.getCharHeight(), z
             };
             mPolyLine.VertexCount = 8;
             mPolyLine.SetVerts(vertPoly);
@@ -1422,20 +1444,22 @@ abstract public class EFISRenderer
     }
 
 
-    //---------------------------------------------------------------------------
-    // EFIS serviceability ... aka the Red X's
-    //
-    /*protected void renderUnserviceableDevice(float[] matrix)
+    /*
+    // this must be overridden in the child classes
+    abstract protected Point project(float x, float y)
     {
-        //renderUnserviceablePage(matrix);
-        renderUnserviceableDi(matrix);
-        renderUnserviceableAlt(matrix);
-        renderUnserviceableAsi(matrix);
-    }*/
+        return new Point(0, 0);
+    }
+
+    // this must be overridden in the child classes
+    abstract protected Point project(float relbrg, float dme, float elev)
+    {
+        return new Point(0, 0);
+    }
+    */
 
     // this must be overridden in the child classes
     abstract protected void renderUnserviceableDevice(float[] matrix);
-
 
     protected void renderUnserviceablePage(float[] matrix)
     {
@@ -1477,7 +1501,6 @@ abstract public class EFISRenderer
         mLine.draw(matrix);
     }
 
-
     protected void renderUnserviceableCompassRose(float[] matrix)
     {
         float z;
@@ -1499,6 +1522,16 @@ abstract public class EFISRenderer
     }
 
 
+    //-------------------------------------------------------------------------
+    // Render the Digital Elevation Model (DEM).
+    //
+    // This is the meat and potatoes of the synthetic vision implementation
+    // The loops are very performance intensive, therefore all the hardcoded
+    // magic numbers
+    //
+    //protected void renderDEMTerrain(float[] matrix)
+    //{
+    //}
 
     protected void renderUnserviceableDi(float[] matrix)
     {
@@ -1519,7 +1552,6 @@ abstract public class EFISRenderer
         );
         mLine.draw(matrix);
     }
-
 
     protected void renderUnserviceableAlt(float[] matrix)
     {
@@ -1561,7 +1593,6 @@ abstract public class EFISRenderer
         mLine.draw(matrix);
     }
 
-
     // Overall PFD serviceability
     public void setServiceableDevice()
     {
@@ -1584,20 +1615,15 @@ abstract public class EFISRenderer
         ServiceableRose = false;
     }
 
-
-
-
     // Altimeter serviceability
     public void setServiceableAlt()
     {
         ServiceableAlt = true;
     }
 
-    public void setUnServiceableAlt()
-    {
+    public void setUnServiceableAlt() {
         ServiceableAlt = false;
     }
-
 
     // Airspeed Indicator serviceability
     public void setServiceableAsi()
@@ -1610,7 +1636,7 @@ abstract public class EFISRenderer
         ServiceableAsi = false;
     }
 
-    // Direction Indicaotor serviceability
+    // Direction Indicator serviceability
     public void setServiceableDi()
     {
         ServiceableDi = true;
@@ -1644,8 +1670,8 @@ abstract public class EFISRenderer
         int rd = Math.round(DIValue);           // round to nearest integer
         String t = Integer.toString(rd);
         glText.begin(foreShadeR, foreShadeG, foreShadeB, 1, matrix);     // white
-        glText.setScale(3.5f);  
-        glText.drawCX(t, 0, - glText.getCharHeight() / 2);  // Draw String
+        glText.setScale(3.5f);
+        glText.drawCX(t, 0, -glText.getCharHeight() / 2);  // Draw String
         glText.end();
     }
 
@@ -1653,7 +1679,6 @@ abstract public class EFISRenderer
     {
         DIValue = value;
     }
-
 
     //-------------------------------------------------------------------------
     // Slip ball
@@ -1711,7 +1736,6 @@ abstract public class EFISRenderer
         SlipValue = value;
     }
 
-
     //-------------------------------------------------------------------------
     // Flight Path Vector
     //
@@ -1722,7 +1746,7 @@ abstract public class EFISRenderer
         pixPerDegree = pixM2 / PPD_DIV;
         z = zfloat;
 
-        float radius = 10 * pixM / 736; 
+        float radius = 10 * pixM / 736;
 
         float x1 = fpvX * pixPerDegree;
         float y1 = fpvY * pixPerDegree;
@@ -1731,7 +1755,7 @@ abstract public class EFISRenderer
         mPolyLine.SetColor(0, foreShadeG, 0, 1); // green
         {
             float[] vertPoly = {
-                    // some issue with draworder to figger out.
+                    // some issue with draworder to figure out.
                     x1 + 2.0f * radius, y1 + 0.8f * radius, z,
                     x1 + 0.8f * radius, y1 + 2.0f * radius, z,
                     x1 - 0.8f * radius, y1 + 2.0f * radius, z,
@@ -1774,25 +1798,6 @@ abstract public class EFISRenderer
         fpvY = y;
     }
 
-    // This may be a differnt name?
-    //-------------------------------------------------------------------------
-    // Airports / Waypoints
-    //
-
-    //
-    // Variables specific to render APT
-    //
-    protected final int MX_APT_SEEK_RNG = 99;
-    protected final int MX_NR_APT = 20;
-    protected int AptSeekRange = 20;   // start with 20nm
-    protected int Aptscounter = 0;
-    protected int nrAptsFound;
-    protected int nrAirspaceFound;
-	
-    //-------------------------------------------------------------------------
-    // Airports / Waypoints
-    //
-
     //
     // Variables specific to render APT
     //
@@ -1806,12 +1811,12 @@ abstract public class EFISRenderer
         // 0.1 approx 5nm
         float dme;
         float _dme = 1000;
-        float aptRelBrg;   
+        float aptRelBrg;
         String wptId = mWptSelName;
         float elev;
 
         // Aways draw at least the selected waypoint
-        // TODO: 2018-08-12 Add elev to selected WPT 
+        // TODO: 2018-08-12 Add elev to selected WPT
         wptId = mWptSelName;
         dme = UNavigation.calcDme(LatValue, LonValue, mWptSelLat, mWptSelLon); // in nm
         aptRelBrg = UNavigation.calcRelBrg(LatValue, LonValue, mWptSelLat, mWptSelLon, DIValue);
@@ -1821,11 +1826,10 @@ abstract public class EFISRenderer
 
         // draw all the other waypoints that fit the criteria
         nrAptsFound = 0;
-        Iterator<Apt> it = Gpx.aptList.iterator();
-        while (it.hasNext()) {
-            Apt currApt; 
+        for (Apt anAptList : Gpx.aptList) {
+            Apt currApt;
             try {
-                currApt = it.next();
+                currApt = anAptList;
             }
             //catch (ConcurrentModificationException e) {
             catch (Exception e) {
@@ -1837,8 +1841,10 @@ abstract public class EFISRenderer
 
 
             // Apply selection criteria
-            if (dme < 5) nrAptsFound++;                                                // always show apts closer then 5nm
-            else if ((nrAptsFound < MX_NR_APT) && (dme < AptSeekRange)) nrAptsFound++; // show all others up to MX_NR_APT for AptSeekRange
+            if (dme < 5)
+                nrAptsFound++;                                                // always show apts closer then 5nm
+            else if ((nrAptsFound < MX_NR_APT) && (dme < AptSeekRange))
+                nrAptsFound++; // show all others up to MX_NR_APT for AptSeekRange
             else continue;  // we already have all the apts as we wish to display
 
             aptRelBrg = UNavigation.calcRelBrg(LatValue, LonValue, currApt.lat, currApt.lon, DIValue);
@@ -1881,7 +1887,7 @@ abstract public class EFISRenderer
         float z = zfloat;
 
         mPolyLine.SetWidth(3);
-        mPolyLine.SetColor(theta*foreShadeR, theta*tapeShadeG, theta*foreShadeB, 1);  //purple'ish
+        mPolyLine.SetColor(theta * foreShadeR, theta * tapeShadeG, theta * foreShadeB, 1);  //purple'ish
 
         float[] vertPoly = {
                 x1 + radius, y1, z,
@@ -1894,17 +1900,12 @@ abstract public class EFISRenderer
         mPolyLine.SetVerts(vertPoly);  //crash here
         mPolyLine.draw(matrix);
 
-        glText.begin(theta*foreShadeR, theta*tapeShadeG, theta*foreShadeB, 1, matrix);  // purple'ish
+        glText.begin(theta * foreShadeR, theta * tapeShadeG, theta * foreShadeB, 1, matrix);  // purple'ish
         glText.setScale(2.0f);
         glText.drawCY(wptId, x1, y1 + glText.getCharHeight() / 2);
         glText.end();
     }
 
-
-    //
-    // Traffic targets
-    //
-    private StratuxWiFiTask mStratux;
     public void setTargets(StratuxWiFiTask Stratux)
     {
         this.mStratux = Stratux;
@@ -1926,20 +1927,20 @@ abstract public class EFISRenderer
                 JSONObject jObject = new JSONObject(s);
                 if (jObject.getString("type").contains("traffic")) {
                     String callsign = jObject.getString("callsign");
-                    float lon = (float)jObject.getDouble("longitude");
-                    float lat = (float)jObject.getDouble("latitude");
-                    float spd = (float)jObject.getDouble("speed");
-                    float brg = (float)jObject.getDouble("bearing");
-                    float alt = (float)jObject.getDouble("altitude"); // note: in feet
-                    String call = (String) jObject.getString("callsign");
+                    float lon = (float) jObject.getDouble("longitude");
+                    float lat = (float) jObject.getDouble("latitude");
+                    float spd = (float) jObject.getDouble("speed");
+                    float brg = (float) jObject.getDouble("bearing");
+                    float alt = (float) jObject.getDouble("altitude"); // note: in feet
+                    String call = jObject.getString("callsign");
 
                     //renderACTSymbol(matrix, lon, lat, call);
                     // 0.16667 deg lat  = 10 nm
                     // 0.1 approx 5nm
                     float actRelBrg;
                     String acId = call;
-                    int tgtBrg = (int)brg;
-                    int tgtSpd = (int)spd;
+                    int tgtBrg = (int) brg;
+                    int tgtSpd = (int) spd;
 
                     float tgtDme = UNavigation.calcDme(LatValue, LonValue, lat, lon); // in nm
                     actRelBrg = UNavigation.calcRelBrg(LatValue, LonValue, lat, lon, DIValue);
@@ -1961,7 +1962,6 @@ abstract public class EFISRenderer
         }
     }
 
-
     private void renderTargetSymbol(float[] matrix, float x1, float y1, String callsign, float alt, int brg, int spd, float dme)
     {
         float radius = pixM / 60;
@@ -1969,10 +1969,10 @@ abstract public class EFISRenderer
         String tgtDmeLabel = Float.toString(UMath.round(dme, 1)) + "nm";
         String tgtAltLabel = Integer.toString(Math.round(alt / 100)) + "FL"; // convert to flight level
 
-        if (dme < 5) mPolyLine.SetWidth(radius/2);
-        else mPolyLine.SetWidth(radius/4);
+        if (dme < 5) mPolyLine.SetWidth(radius / 2);
+        else mPolyLine.SetWidth(radius / 4);
 
-        mPolyLine.SetColor(theta*foreShadeR, theta*foreShadeG, theta*foreShadeB, 1);  //white'ish
+        mPolyLine.SetColor(theta * foreShadeR, theta * foreShadeG, theta * foreShadeB, 1);  //white'ish
 
         float[] vertPoly = {
                 x1 + radius, y1 + radius, z,
@@ -1994,23 +1994,23 @@ abstract public class EFISRenderer
 
 
         // Text at target
-        glText.begin(theta*foreShadeR, theta*foreShadeG, theta*foreShadeB, 1, matrix);  // white'ish
+        glText.begin(theta * foreShadeR, theta * foreShadeG, theta * foreShadeB, 1, matrix);  // white'ish
         glText.setScale(2.0f);
-        glText.drawCY(callsign,    x1, y1 - glText.getCharHeight());
-        glText.drawCY(tgtAltLabel, x1, y1 - 1.8f*glText.getCharHeight());
-        glText.drawCY(tgtDmeLabel, x1, y1 - 2.6f*glText.getCharHeight());
+        glText.drawCY(callsign, x1, y1 - glText.getCharHeight());
+        glText.drawCY(tgtAltLabel, x1, y1 - 1.8f * glText.getCharHeight());
+        glText.drawCY(tgtDmeLabel, x1, y1 - 2.6f * glText.getCharHeight());
         glText.end();
 
         //
         // Track/speed line
         //
-        if (dme < 5) mLine.SetWidth(radius/2);
-        else mLine.SetWidth(radius/4);
+        if (dme < 5) mLine.SetWidth(radius / 2);
+        else mLine.SetWidth(radius / 4);
 
         mLine.SetColor(theta * foreShadeR, theta * foreShadeG, theta * foreShadeB, 1); // white
 
-        float x2 = x1 + mMapZoom * (spd/50 * UTrig.icos(90-(int)(brg - DIValue)));
-        float y2 = y1 + mMapZoom * (spd/50 * UTrig.isin(90-(int)(brg - DIValue)));
+        float x2 = x1 + mMapZoom * (spd / 50 * UTrig.icos(90 - (int) (brg - DIValue)));
+        float y2 = y1 + mMapZoom * (spd / 50 * UTrig.isin(90 - (int) (brg - DIValue)));
         mLine.SetVerts(
                 x1, y1, z,
                 x2, y2, z
@@ -2019,35 +2019,19 @@ abstract public class EFISRenderer
 
 
         // Text at stem
-        /*glText.begin(theta*foreShadeR, theta*foreShadeG, theta*foreShadeB, 1, matrix);  // white'ish
+/*
+        glText.begin(theta * foreShadeR, theta * foreShadeG, theta * foreShadeB, 1, matrix);  // white'ish
         glText.setScale(2.0f);
-        glText.drawCY(callsign, x2, y2 - 0*glText.getCharHeight());
-        glText.drawCY(alt, x2, y2 - 0.8f*glText.getCharHeight());
-        glText.end();*/
+        glText.drawCY(callsign, x2, y2 - 0 * glText.getCharHeight());
+        glText.drawCY(alt, x2, y2 - 0.8f * glText.getCharHeight());
+        glText.end();
+*/
     }
 
-
-    private String mActiveDevice = "NONE";
     public void setActiveDevice(String device)
     {
         mActiveDevice = device;
     }
-
-
-    /*
-    // this must be overridden in the child classes
-    abstract protected Point project(float x, float y)
-    {
-        return new Point(0, 0);
-    }
-
-    // this must be overridden in the child classes
-    abstract protected Point project(float relbrg, float dme, float elev)
-    {
-        return new Point(0, 0);
-    }
-    */
-
 
     // this must be overridden in the child classes
     abstract protected Point project(float x, float y);
@@ -2058,8 +2042,6 @@ abstract public class EFISRenderer
     // elev in feet
     abstract protected Point project(float relbrg, float dme, float elev);
 
-
-
     //-------------------------------------------------------------------------
     // Synthetic Vision
     //
@@ -2069,7 +2051,7 @@ abstract public class EFISRenderer
         float blue;
         float green;
 
-        float r = 600;  
+        float r = 600;
         float r2 = r * 2;
 
         red = 0.0f;
@@ -2101,7 +2083,7 @@ abstract public class EFISRenderer
 
         // Sky - simple
         // max: -0.05 to 180 pitch
-        float overlap;  
+        float overlap;
         if (AGLValue > 0) overlap = 0.1f;
         else overlap = 0.0f;
 
@@ -2122,26 +2104,13 @@ abstract public class EFISRenderer
         }
     }
 
-
-    //-------------------------------------------------------------------------
-    // Render the Digital Elevation Model (DEM).
-    //
-    // This is the meat and potatoes of the synthetic vision implementation
-    // The loops are very performance intensive, therefore all the hardcoded
-    // magic numbers
-    //
-    //protected void renderDEMTerrain(float[] matrix)
-    //{
-    //}
-
-
     // This is only good for debugging
     // It is very slow
     public void renderDEMBuffer(float[] matrix)
     {
         float z = zfloat;
-        int x; 
-        int y; 
+        int x;
+        int y;
 
         int maxx = DemGTOPO30.BUFX;
         int maxy = DemGTOPO30.BUFY;
@@ -2160,14 +2129,13 @@ abstract public class EFISRenderer
         }
     }
 
-
     //-------------------------------------------------------------------------
     // Highway in the Sky (HITS)
     //
     protected void renderHITS(float[] matrix)
     {
         float z, pixPerDegree, x1, y1;
-        float radius; 
+        float radius;
         float gateDme;
         float hitRelBrg;
         float obs;
@@ -2225,7 +2193,7 @@ abstract public class EFISRenderer
                 mPolyLine.draw(matrix);
 
                 // faded window
-                mPolygon.SetColor(tapeShadeR/10, tapeShadeG/10, tapeShadeB/10, 0f);
+                mPolygon.SetColor(tapeShadeR / 10, tapeShadeG / 10, tapeShadeB / 10, 0f);
                 mPolygon.VertexCount = 5;
                 mPolygon.SetVerts(vertPoly);
                 mPolygon.draw(matrix);
@@ -2233,9 +2201,8 @@ abstract public class EFISRenderer
         }
     }
 
-
     //-------------------------------------------------------------------------
-    // Radio Alitimeter (agl)
+    // Radio Altimeter (agl)
     //
     // There are two events that can change agl: setLatLon and setAlt
     // This function is called directly by them.
@@ -2245,7 +2212,8 @@ abstract public class EFISRenderer
         AGLValue = agl;
         if ((AGLValue <= 0) && (IASValue < AircraftData.Vx) && DemGTOPO30.demDataValid) {  // was Vs0
             // Handle taxi as a special case
-            MSLValue = 1 + (int) Unit.Meter.toFeet(DemGTOPO30.getElev(LatValue, LonValue));  // Add 1 extra ft to esure we "above the ground"
+            MSLValue = 1 + (int) Unit.Meter.toFeet(DemGTOPO30.getElev(LatValue, LonValue));
+            // Add 1 extra ft to ensure we are "above the ground"
             AGLValue = 1;  // Just good form, it will get changed on the next update
         }
     }
@@ -2295,7 +2263,6 @@ abstract public class EFISRenderer
         mLine.draw(matrix);
     }
 
-
     public void setTurn(float rot)
     {
         ROTValue = rot;
@@ -2307,10 +2274,11 @@ abstract public class EFISRenderer
     protected void renderBatteryPct(float[] matrix)
     {
         String s = String.format("BAT %3.0f", BatteryPct * 100) + "%";
-        if (BatteryPct > 0.1) glText.begin(foreShadeR, foreShadeG, foreShadeB, 1.0f, matrix); // white
+        if (BatteryPct > 0.1)
+            glText.begin(foreShadeR, foreShadeG, foreShadeB, 1.0f, matrix); // white
         else glText.begin(0, foreShadeG, foreShadeB, 1.0f, matrix); // cyan
 
-        glText.setScale(2.0f);                            
+        glText.setScale(2.0f);
         glText.draw(s, -0.97f * pixW2, (lineAncillaryDetails - 0.2f) * pixM2 - glText.getCharHeight() / 2); // as part of the ancillary group
         glText.end();
     }
@@ -2324,7 +2292,7 @@ abstract public class EFISRenderer
     {
         String t = String.format("G %03.1f", GForceValue);
         glText.begin(foreShadeR, foreShadeG, foreShadeB, 1.0f, matrix); // white
-        glText.setScale(3.0f);                        
+        glText.setScale(3.0f);
         glText.draw(t, -0.97f * pixW2, -0.94f * pixH2 - glText.getCharHeight() / 2);
         glText.end();
     }
@@ -2334,23 +2302,16 @@ abstract public class EFISRenderer
         GForceValue = value;
     }
 
-    protected String mAutoWpt = "ZZZZ";
-
     public void setAutoWptValue(String wpt)
     {
         mAutoWpt = wpt;
     }
-
-    private float mAutoWptBrg;
 
     protected void setAutoWptBrg(float brg)
     {
         mAutoWptBrg = brg;
     }
 
-    private float mSelWptBrg;             // Selected waypoint Bearing
-    protected float mSelWptRlb;           // Selected waypoint Relative bearing
-    protected float mSelWptDme;           // Selected waypoint Dme distance (nm)
     private void setSelWptBrg(float brg)
     {
         mSelWptBrg = brg;
@@ -2365,12 +2326,6 @@ abstract public class EFISRenderer
     {
         mSelWptRlb = rlb;
     }
-
-    //
-    // Display all the relevant auto wpt information with
-    // A combo function to replace the individual ones
-    //
-    protected float lineAutoWptDetails;  // Auto Wpt - Set in onSurfaceChanged
 
     protected void renderAutoWptDetails(float[] matrix)
     {
@@ -2390,12 +2345,6 @@ abstract public class EFISRenderer
         glText.end();
     }
 
-    //-------------------------------------------------------------------------
-    // Display all the relevant ancillary device information with
-    // A combo function to replace the individual ones
-    //
-    protected float lineAncillaryDetails;  // Ancillary Details - Set in onSurfaceChanged
-
     protected void renderAncillaryDetails(float[] matrix)
     {
         String s;
@@ -2403,7 +2352,7 @@ abstract public class EFISRenderer
         glText.begin(foreShadeR, foreShadeG, foreShadeB, 1.0f, matrix); // white
         glText.setScale(2.0f);
 
-        s = mGpsStatus; 
+        s = mGpsStatus;
         glText.draw(s, -0.97f * pixW2, (lineAncillaryDetails - 0.3f) * pixM2 - glText.getCharHeight() / 2);
 
         s = String.format("RNG %d   #AP %d", AptSeekRange, nrAptsFound);
@@ -2419,58 +2368,35 @@ abstract public class EFISRenderer
         glText.end();
     }
 
-
-    private String mGpsStatus; // = "GPS: 10 / 11";
-
     public void setGpsStatus(String gpsstatus)
     {
         mGpsStatus = gpsstatus;
     }
 
-    public String mWptSelName = "ZZZZ";
-    public String mWptSelComment = "Null Island";
-    public float mWptSelLat = 00f;
-    public float mWptSelLon = 00f;
-    public float mAltSelValue = 0;
-    public String mAltSelName = "00000";
-    protected float leftC = 0.6f;   // Selected Wpt
-    protected float lineC;          // Selected Wpt - Set in onSurfaceChanged
-    protected float selWptDec;      
-    protected float selWptInc;      
-    public float mObsValue;
-
-    protected float spinnerStep = 0.10f;    // spacing between the spinner buttons
-    protected float spinnerTextScale = 1;
-    public boolean fatFingerActive = false;
-
-    public float commandPitch;
-    public float commandRoll;
-
-
     protected void renderSelWptValue(float[] matrix)
     {
         float z = zfloat;
-        float size = spinnerStep * 0.2f; 
+        float size = spinnerStep * 0.2f;
 
         // Draw the selecting triangle spinner buttons
         mTriangle.SetColor(foreShadeR, foreShadeG, foreShadeB, 1);  // gray
         for (int i = 0; i < 4; i++) {
             float xPos = (leftC + i * spinnerStep);
 
-            mTriangle.SetVerts((xPos - size) * pixW2, selWptDec, z,  
+            mTriangle.SetVerts((xPos - size) * pixW2, selWptDec, z,
                     (xPos + size) * pixW2, selWptDec, z,
                     (xPos + 0) * pixW2, selWptDec + 2 * size * pixM2, z);
             mTriangle.draw(matrix);
 
-            mTriangle.SetVerts((xPos - size) * pixW2, selWptInc, z, 
+            mTriangle.SetVerts((xPos - size) * pixW2, selWptInc, z,
                     (xPos + size) * pixW2, selWptInc, z,
                     (xPos + 0) * pixW2, selWptInc - 2 * size * pixM2, z);
             mTriangle.draw(matrix);
 
             // Draw the individual select characters
             if (mWptSelName != null) {
-                glText.begin(foreShadeR, tapeShadeG, foreShadeB, 1.0f, matrix); 
-                glText.setScale(3 * spinnerTextScale); 
+                glText.begin(foreShadeR, tapeShadeG, foreShadeB, 1.0f, matrix);
+                glText.setScale(3 * spinnerTextScale);
                 String s = String.format("%c", mWptSelName.charAt(i));
                 glText.drawCX(s, xPos * pixW2, ((selWptInc + selWptDec) / 2) - (glText.getCharHeight() / 2));
                 glText.end();
@@ -2493,7 +2419,8 @@ abstract public class EFISRenderer
         // if (IASValue < Vs0) commandPitch = -MAX_COMMAND; // Maybe handle a stall?
 
         // update the flight director data
-        /*float*/ commandRoll = relBrg;
+        /*float*/
+        commandRoll = relBrg;
         if (commandRoll > 30) commandRoll = 30;   //
         if (commandRoll < -30) commandRoll = -30;  //
         setFlightDirector(displayFlightDirector, commandPitch, commandRoll);
@@ -2553,47 +2480,44 @@ abstract public class EFISRenderer
         glText.draw(s, leftC * pixW2, lineC * pixH2 - 2.5f * glText.getCharHeight());
         glText.end();
 
-        /* 
-		// Guide lines for fatfinger ... ?
+
+        // Guide lines for fatfinger ... ?
+/*
         mLine.SetColor(0.9f, 0.9f, 0.9f, 0); //white
-        mLine.SetVerts(leftC * pixW2 - 5, lineC * pixH2 + 0.75f*glText.getCharHeight(), z,
-                               pixW2 - 5, lineC * pixH2 + 0.75f*glText.getCharHeight(), z);
+        mLine.SetVerts(leftC * pixW2 - 5, lineC * pixH2 + 0.75f * glText.getCharHeight(), z,
+                pixW2 - 5, lineC * pixH2 + 0.75f * glText.getCharHeight(), z);
         mLine.draw(matrix);
-        mLine.SetVerts(leftC * pixW2 - 5, lineC * pixH2 - 2.70f*glText.getCharHeight(), z,
-                               pixW2 - 5, lineC * pixH2 - 2.70f*glText.getCharHeight(), z);
-        mLine.draw(matrix); 
-		*/
+        mLine.SetVerts(leftC * pixW2 - 5, lineC * pixH2 - 2.70f * glText.getCharHeight(), z,
+                pixW2 - 5, lineC * pixH2 - 2.70f * glText.getCharHeight(), z);
+        mLine.draw(matrix);
+*/
     }
-
-
-    protected float selAltInc; 
-    protected float selAltDec; 
 
     protected void renderSelAltValue(float[] matrix)
     {
         float z;
         z = zfloat;
-        float size = spinnerStep * 0.2f; 
+        float size = spinnerStep * 0.2f;
 
         // Draw the selecting triangle spinner buttons
         mTriangle.SetColor(foreShadeR, foreShadeG, foreShadeB, 1);  // gray
         for (int i = 0; i < 3; i++) {
             float xPos = (leftC + i * spinnerStep);
 
-            mTriangle.SetVerts((xPos - size) * pixW2, selAltDec, z,  
+            mTriangle.SetVerts((xPos - size) * pixW2, selAltDec, z,
                     (xPos + size) * pixW2, selAltDec, z,
                     (xPos + 0.00f) * pixW2, selAltDec + 2 * size * pixM2, z);
             mTriangle.draw(matrix);
 
-            mTriangle.SetVerts((xPos - size) * pixW2, selAltInc, z,  
+            mTriangle.SetVerts((xPos - size) * pixW2, selAltInc, z,
                     (xPos + size) * pixW2, selAltInc, z,
                     (xPos + 0.00f) * pixW2, selAltInc - 2 * size * pixM2, z);
             mTriangle.draw(matrix);
 
             // Draw the individual select characters
             if (mAltSelName != null) {
-                glText.begin(foreShadeR, tapeShadeG, foreShadeB, 1, matrix); 
-                glText.setScale(3f * spinnerTextScale); 
+                glText.begin(foreShadeR, tapeShadeG, foreShadeB, 1, matrix);
+                glText.setScale(3f * spinnerTextScale);
                 String s = String.format("%c", mAltSelName.charAt(i));
                 glText.drawCX(s, xPos * pixW2, ((selAltInc + selAltDec) / 2) - glText.getCharHeight() / 2);
                 glText.end();
@@ -2601,7 +2525,7 @@ abstract public class EFISRenderer
         }
 
         float xPos = (leftC + 2.6f / 10f);
-        glText.begin(foreShadeR, tapeShadeG, foreShadeB, 1, matrix); 
+        glText.begin(foreShadeR, tapeShadeG, foreShadeB, 1, matrix);
         glText.setScale(2.2f);
         String s = "F L";  // "X100 ft";
         glText.draw(s, xPos * pixW2, -0.83f * pixH2 - glText.getCharHeight() / 2);
@@ -2670,15 +2594,14 @@ abstract public class EFISRenderer
         DemGTOPO30.setGamma(gamma);
     }
 
-
-
     //---------------------------------------------------------------------------
     // Handle the tap events
     //
     public void setActionDown(float x, float y)
     {
-        mX = (x / pixW - 0.5f) * 2;
-        mY = -(y / pixH - 0.5f) * 2;
+        float mX = (x / pixW - 0.5f) * 2;
+        // keypress location
+        float mY = -(y / pixH - 0.5f) * 2;
 
         int pos = -1; // set to invalid / no selection
         int inc = 0;  // initialise to 0, also acts as a flag
@@ -2705,7 +2628,7 @@ abstract public class EFISRenderer
         for (int i = 0; i < 4; i++) {
             float xPos = (leftC + i * spinnerStep);
 
-            if (Math.abs(mX - xPos) < spinnerStep / 2) {       
+            if (Math.abs(mX - xPos) < spinnerStep / 2) {
                 pos = i;
                 break;
             }
@@ -2729,11 +2652,7 @@ abstract public class EFISRenderer
                 if (wpt[pos] < 'A') wpt[pos] = 'Z';
                 if (wpt[pos] > 'Z') wpt[pos] = 'A';
 
-                Iterator<Apt> it = Gpx.aptList.iterator();
-
-                while (it.hasNext()) {
-                    Apt currApt = it.next();
-
+                for (Apt currApt : Gpx.aptList) {
                     // Look for a perfect match
                     if (currApt.name.equals(String.valueOf(wpt))) {
                         mWptSelName = currApt.name;
@@ -2767,14 +2686,11 @@ abstract public class EFISRenderer
         }
     }
 
-
-    //-------------------------------------------------------------------------
+    //-----------------------------------------------------------------------------
     //
-    // Auto Waypoint handlers
+    //  Remote Indicator
     //
-    //-------------------------------------------------------------------------
-    private float mAutoWptDme;
-    private float mAutoWptRlb;
+    //-----------------------------------------------------------------------------
 
     public void setAutoWptDme(float dme)
     {
@@ -2785,7 +2701,7 @@ abstract public class EFISRenderer
     {
         String t = String.format("RLB  %03.0f", mAutoWptRlb);
         glText.begin(foreShadeR, foreShadeG, foreShadeB, 1, matrix); // white
-        glText.setScale(2.0f);                            
+        glText.setScale(2.0f);
         glText.draw(t, -0.97f * pixW2, -0.7f * pixM2 - glText.getCharHeight() / 2);  // Draw  String
         glText.end();
     }
@@ -2831,15 +2747,6 @@ abstract public class EFISRenderer
         }
     }
 
-    //-----------------------------------------------------------------------------
-    //
-    //  Remote Indicator
-    //
-    //-----------------------------------------------------------------------------
-
-    protected float roseScale;
-    protected float roseTextScale;
-
     protected void renderFixedCompassMarkers(float[] matrix)
     {
         int i;
@@ -2848,7 +2755,7 @@ abstract public class EFISRenderer
 
         z = zfloat;
 
-        mLine.SetWidth(2);  
+        mLine.SetWidth(2);
         mLine.SetColor(foreShadeR, foreShadeG, foreShadeB, 1);
         for (i = 0; i <= 315; i = i + 45) {
 
@@ -2884,7 +2791,7 @@ abstract public class EFISRenderer
 
         z = zfloat;
 
-        mLine.SetWidth(2);  
+        mLine.SetWidth(2);
         mLine.SetColor(tapeShadeR, tapeShadeG, tapeShadeB, 1);  // grey
 
         // The rose degree tics
@@ -2898,12 +2805,12 @@ abstract public class EFISRenderer
             mLine.draw(matrix);
 
             glText.begin(tapeShadeR, tapeShadeG, tapeShadeB, 1.0f, matrix); // grey
-            glText.setScale(2.0f*roseTextScale);
+            glText.setScale(2.0f * roseTextScale);
             switch (i) {
                 case 0:
                     t = "N";
                     glText.begin(foreShadeR, foreShadeG, foreShadeB, 1.0f, matrix); // white
-                    glText.setScale(3.0f*roseTextScale);
+                    glText.setScale(3.0f * roseTextScale);
                     break;
                 case 30:
                     t = "3";
@@ -2914,7 +2821,7 @@ abstract public class EFISRenderer
                 case 90:
                     t = "E";
                     glText.begin(foreShadeR, foreShadeG, foreShadeB, 1.0f, matrix); // white
-                    glText.setScale(2.5f*roseTextScale);
+                    glText.setScale(2.5f * roseTextScale);
                     break;
                 case 120:
                     t = "12";
@@ -2925,7 +2832,7 @@ abstract public class EFISRenderer
                 case 180:
                     t = "S";
                     glText.begin(foreShadeR, foreShadeG, foreShadeB, 1.0f, matrix); // white
-                    glText.setScale(2.5f*roseTextScale);
+                    glText.setScale(2.5f * roseTextScale);
                     break;
                 case 210:
                     t = "21";
@@ -2936,7 +2843,7 @@ abstract public class EFISRenderer
                 case 270:
                     t = "W";
                     glText.begin(foreShadeR, foreShadeG, foreShadeB, 1.0f, matrix); // white
-                    glText.setScale(2.5f*roseTextScale);
+                    glText.setScale(2.5f * roseTextScale);
                     break;
                 case 300:
                     t = "30";
@@ -2951,7 +2858,8 @@ abstract public class EFISRenderer
 
             //glText.begin( 0, tapeShade, 0, 1.0f, matrix ); // white
             //glText.setScale(1.5f); // seems to have a weird effect here?
-            glText.drawC(t, 0.75f * roseRadius * cosI, 0.75f * roseRadius * sinI, -i); // angleDeg=90-i, Use 360-DIValue for vertical text
+            glText.drawC(t, 0.75f * roseRadius * cosI, 0.75f * roseRadius * sinI, -i);
+            // angleDeg=90-i, Use 360-DIValue for vertical text
             glText.end();
             for (j = 10; j <= 20; j = j + 10) {
                 sinI = UTrig.isin((i + j));
@@ -2975,6 +2883,10 @@ abstract public class EFISRenderer
     }
 
     //-------------------------------------------------------------------------
+    // MFD specific members
+    //
+
+    //-------------------------------------------------------------------------
     // Render the two RMI needles
     //
     protected void renderBearing(float[] matrix)
@@ -2987,8 +2899,9 @@ abstract public class EFISRenderer
         //
         // Bearing to Automatic Waypoint
         //
-        mLine.SetWidth(5); 
-        mLine.SetColor(theta * foreShadeR, theta * foreShadeG, theta * backShadeB, 1);  // needle yellow
+        mLine.SetWidth(5);
+        mLine.SetColor(theta * foreShadeR, theta * foreShadeG, theta * backShadeB, 1);
+        // needle yellow
 
         sinI = 0.9f * UTrig.isin(90 - (int) mAutoWptBrg);
         cosI = 0.9f * UTrig.icos(90 - (int) mAutoWptBrg);
@@ -3043,8 +2956,9 @@ abstract public class EFISRenderer
         //
         // Bearing to Selected Waypoint
         //
-        mLine.SetWidth(8); 
-        mLine.SetColor(theta * foreShadeR, theta * 0.5f, theta * foreShadeB, 1); // green
+        mLine.SetWidth(8);
+        mLine.SetColor(theta * foreShadeR, theta * 0.5f, theta * foreShadeB, 1);
+        // green
 
         sinI = 0.9f * UTrig.isin(90 - (int) mSelWptBrg);
         cosI = 0.9f * UTrig.icos(90 - (int) mSelWptBrg);
@@ -3064,16 +2978,16 @@ abstract public class EFISRenderer
         );
         mLine.draw(matrix);
 
-        mLine.SetWidth(6); 
+        mLine.SetWidth(6);
         // point
-        _sinI = 0.80f * UTrig.isin(90 - (int) mSelWptBrg + 9); 
+        _sinI = 0.80f * UTrig.isin(90 - (int) mSelWptBrg + 9);
         _cosI = 0.80f * UTrig.icos(90 - (int) mSelWptBrg + 9);
         mLine.SetVerts(
                 roseRadius * _cosI, roseRadius * _sinI, z,
                 roseRadius * cosI, roseRadius * sinI, z
         );
         mLine.draw(matrix);
-        _sinI = 0.80f * UTrig.isin(90 - (int) mSelWptBrg - 8); 
+        _sinI = 0.80f * UTrig.isin(90 - (int) mSelWptBrg - 8);
         _cosI = 0.80f * UTrig.icos(90 - (int) mSelWptBrg - 8);
         mLine.SetVerts(
                 roseRadius * _cosI, roseRadius * _sinI, z,
@@ -3081,7 +2995,6 @@ abstract public class EFISRenderer
         );
         mLine.draw(matrix);
     }
-
 
     protected void renderBearingTxt(float[] matrix)
     {
@@ -3107,12 +3020,6 @@ abstract public class EFISRenderer
     }
 
     //-------------------------------------------------------------------------
-    // MFD specific members
-    //
-
-    public float mMapZoom = 20; // Zoom multiplier for map. 1 (max out) to 200 (max in)
-
-    //-------------------------------------------------------------------------
     // Render the Direct To bearing line
     //
     protected void renderDctTrack(float[] matrix)
@@ -3123,7 +3030,7 @@ abstract public class EFISRenderer
         //
         // Direct Track to Selected Waypoint
         //
-        mLine.SetWidth(20); 
+        mLine.SetWidth(20);
         mLine.SetColor(0.45f, 0.45f, 0.10f, 0.125f); // yellow'ish --- B2 todo
 
         x1 = mMapZoom * (mSelWptDme * UTrig.icos(90 - (int) mSelWptRlb));
@@ -3134,26 +3041,24 @@ abstract public class EFISRenderer
         );
         mLine.draw(matrix);
         // Skunk stripe
-        mLine.SetWidth(4); 
+        mLine.SetWidth(4);
         mLine.SetColor(0.0f, 0.0f, 0.0f, 1); // black
         mLine.draw(matrix);
 
         //
         // Direct Track to Automatic Waypoint
         //
-        // /* I'm not sure I like this feature ...
-        mLine.SetWidth(2); 
+        // /* I'm not sure I like this feature...
+        mLine.SetWidth(2);
         mLine.SetColor(theta * foreShadeR, theta * foreShadeG, theta * backShadeB, 1); // yellow
 
-        x1 = mMapZoom * (mAutoWptDme * UTrig.icos(90-(int)mAutoWptRlb));
-        y1 = mMapZoom * (mAutoWptDme * UTrig.isin(90-(int)mAutoWptRlb));
+        x1 = mMapZoom * (mAutoWptDme * UTrig.icos(90 - (int) mAutoWptRlb));
+        y1 = mMapZoom * (mAutoWptDme * UTrig.isin(90 - (int) mAutoWptRlb));
         mLine.SetVerts(
                 0, 0, z,
                 x1, y1, z
         );
         mLine.draw(matrix);
-        // */
-
     }
 
     //-------------------------------------------------------------------------
@@ -3237,8 +3142,8 @@ abstract public class EFISRenderer
                 distance = distance - 4;
                 x1 = mMapZoom * distance;
             }
-            else { 
-                // very close - and also catch the potential 
+            else {
+                // very close - and also catch the potential
                 // endless loop
                 distance = 1;
                 x1 = mMapZoom;
@@ -3284,11 +3189,6 @@ abstract public class EFISRenderer
         mLine.draw(matrix);
     }
 
-    //-------------------------------------------------------------------------
-    // Map Zooming
-    //
-    public final float MAX_ZOOM = 120;
-    public final float MIN_ZOOM = 5;
     public void setMapZoom(float zoom)
     {
         mMapZoom = zoom;
@@ -3306,14 +3206,14 @@ abstract public class EFISRenderer
         if (mMapZoom < MIN_ZOOM) mMapZoom = MIN_ZOOM;
     }
 
-    public void setAutoZoomActive(boolean active)
-    {
-        autoZoomActive = active;
-    }
-
     public boolean isAutoZoomActive()
     {
         return autoZoomActive;
+    }
+
+    public void setAutoZoomActive(boolean active)
+    {
+        autoZoomActive = active;
     }
 
     //-------------------------------------------------------------------------
@@ -3332,44 +3232,47 @@ abstract public class EFISRenderer
         }
     }
 
-
     //-------------------------------------------------------------------------
     // North Que
     //
     protected void renderNorthQue(float[] matrix)
     {
-        float  z = zfloat;
+        float z = zfloat;
 
         mTriangle.SetWidth(1);
         // Right triangle
         mTriangle.SetColor(foreShadeR, foreShadeG, foreShadeB, 1); // lightest gray (0.7)
-        mTriangle.SetVerts(0, -0.08f*pixM2, z,
-                0,            +0.08f*pixM2, z,
-                0.03f*pixM2,  -0.12f*pixM2,z);
+        mTriangle.SetVerts(0, -0.08f * pixM2, z,
+                0, +0.08f * pixM2, z,
+                0.03f * pixM2, -0.12f * pixM2, z);
         mTriangle.draw(matrix);
 
         // left triangle
         mTriangle.SetColor(tapeShadeR, tapeShadeG, tapeShadeB, 1); // darker gray (0.5)
-        mTriangle.SetVerts(0, -0.08f*pixM2, z,
-                +0,           +0.08f*pixM2, z,
-                -0.03f*pixM2, -0.12f*pixM2,z);
+        mTriangle.SetVerts(0, -0.08f * pixM2, z,
+                +0, +0.08f * pixM2, z,
+                -0.03f * pixM2, -0.12f * pixM2, z);
         mTriangle.draw(matrix);
 
         glText.begin(tapeShadeR, tapeShadeG, tapeShadeB, 1, matrix); // lighter gray (0.6)
         glText.setScale(1.5f); // 2 seems full size
-        glText.drawCX("N", 0, 0.09f*pixM2);
+        glText.drawCX("N", 0, 0.09f * pixM2);
         glText.end();
     }
 
-
+    public enum layout_t
+    {
+        PORTRAIT,
+        LANDSCAPE
+    }
 }
 
 
 //-----------------------------------------------------------------------------
-/*
-Some leftover code fragments from the original c code.
-This may still be useful one day
 
+//Some leftover code fragments from the original c code.
+//This may still be useful one day
+/*
 void GLPFD::renderDIMarkers()
 {
 	GLint i, j;
@@ -3481,8 +3384,4 @@ void GLPFD::setBearing(int degrees)
   baroPressure = degrees;
 	updateGL();
 }
-
 */
-
-
-

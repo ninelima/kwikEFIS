@@ -18,9 +18,9 @@ package player.efis.common;
 
 public class Apt
 {
-	public String name;
-	public String cmt;
-	public  float lat;  // in decimal dgrees
-	public  float lon;  // in decimal dgrees
-	public  float elev; // in m
+    public String name;
+    public String cmt;
+    public float lat;  // in decimal dgrees
+    public float lon;  // in decimal dgrees
+    public float elev; // in m
 }

@@ -14,9 +14,7 @@ package com.stratux.stratuvare.gdl90;
 import com.stratux.stratuvare.utils.Logger;
 
 /**
- * 
  * @author zkhan
- *
  */
 public class Id10Product extends Product {
 
@@ -26,8 +24,6 @@ public class Id10Product extends Product {
 
     @Override
     protected void parse(byte[] msg) {
-
         Logger.Logit("Not implemented product 10");
     }
-
 }

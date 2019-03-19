@@ -14,33 +14,30 @@ package com.stratux.stratuvare.nmea;
 import com.stratux.stratuvare.utils.Logger;
 
 /**
- * 
  * @author zkhan
- *
  */
 public class RTMMessage extends Message {
 
     public float mLat;
     public float mLon;
-    
-    public int   mSpeed;
-    public int   mAltitude;
-    public int     mDirection;
-    public int     mIcaoAddress;
 
-    
+    public int mSpeed;
+    public int mAltitude;
+    public int mDirection;
+    public int mIcaoAddress;
+
+
     public RTMMessage() {
         super(MessageType.Traffic);
     }
 
     /**
-     * 
      * @param msg
      */
     public void parse(String msg) {
         String tokens[] = msg.split(",");
-        
-        if(tokens.length < 10) {
+
+        if (tokens.length < 10) {
             return;
         }
         /* 1 = time
@@ -53,42 +50,38 @@ public class RTMMessage extends Message {
          */
         double tmp;
         double tmp1;
-        
+
         try {
-            mIcaoAddress = Integer.parseInt(tokens[2]);           
+            mIcaoAddress = Integer.parseInt(tokens[2]);
+        } catch (Exception e) {
         }
-        catch (Exception e) {
-            
-        }
-        
+
         try {
             tmp = Double.parseDouble(tokens[3]);
-            tmp1 = (double)((int)tmp / (int)100);
-            mLat = (float)(tmp - (tmp1 * 100.0)) / 60.f + (float)tmp1;
-            if(tokens[4].equals("S")) {
+            tmp1 = (double) ((int) tmp / 100);
+            mLat = (float) (tmp - (tmp1 * 100.0)) / 60.f + (float) tmp1;
+            if (tokens[4].equals("S")) {
                 mLat = -mLat;
             }
             tmp = Double.parseDouble(tokens[5]);
-            tmp1 = (double)((int)tmp / (int)100);
-            mLon = (float)(tmp - (tmp1 * 100.0)) / 60.f + (float)tmp1;
-            if(tokens[6].equals("W")) {
+            tmp1 = (double) ((int) tmp / 100);
+            mLon = (float) (tmp - (tmp1 * 100.0)) / 60.f + (float) tmp1;
+            if (tokens[6].equals("W")) {
                 mLon = -mLon;
             }
 
-            mAltitude = (int)Double.parseDouble(tokens[7]);
-            mDirection = (int)Double.parseDouble(tokens[8]);
-            
+            mAltitude = (int) Double.parseDouble(tokens[7]);
+            mDirection = (int) Double.parseDouble(tokens[8]);
+
             /*
              * Kt to m/s
              */
-            mSpeed = (int)(Double.parseDouble(tokens[9]) * 0.514444);
-            
+            mSpeed = (int) (Double.parseDouble(tokens[9]) * 0.514444);
+
             Logger.Logit("Traffic icao addr " + mIcaoAddress + " lat " + mLat + " lon " + mLon + " speed " + mSpeed +
                     " direction " + mDirection);
 
-        }
-        catch (Exception e) {
-            
+        } catch (Exception e) {
         }
     }
 }

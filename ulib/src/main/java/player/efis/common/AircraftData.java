@@ -36,16 +36,15 @@ enum AircraftModel
 
 public class AircraftData
 {
-    static AircraftModel mAircraftModel = AircraftModel.RV8;
-
     static public int Vs0 = 20;  // Stall, flap extended
     static public int Vs1 = 30;  // Stall, flap retracted
-    static public int Vx  = 40;  // Best angle climb
-    static public int Vy  = 50;  // Best rate climb
+    static public int Vx = 40;  // Best angle climb
+    static public int Vy = 50;  // Best rate climb
     static public int Vfe = 60;  // Flaps extension
-    static public int Va  = 70;  // Maneuvering
+    static public int Va = 70;  // Maneuvering
     static public int Vno = 80;  // Max structural cruise
     static public int Vne = 90;  // Never exceed
+    static AircraftModel mAircraftModel = AircraftModel.RV8;
 
     //-------------------------------------------------------------------------
     // Define the various built-in aircraft definitions
@@ -147,7 +146,7 @@ public class AircraftData
                 break;
 
             case M20J:
-				// Mooney M20J
+                // Mooney M20J
                 Vs0 = 53;   // Stall, flap extended
                 Vs1 = 53;   // Stall, flap retracted
                 Vx = 66;    // Best angle climb
@@ -195,7 +194,7 @@ public class AircraftData
                 Vno = 155; // Max structural cruise - tbd
                 Vne = 174; // Never exceed
                 break;
-				
+
             case JET:
                 // Generic business jet
                 Vs0 = 96;   // Stall, flap extended
@@ -207,7 +206,6 @@ public class AircraftData
                 Vno = 418;  // Max structural cruise - tbd
                 Vne = 471;  // Never exceed
                 break;
-				
 
             // V Speeds for various rotor wing aircraft models
             // White Arc  Vs0 - Vfe

@@ -17,13 +17,11 @@ package com.stratux.stratuvare.utils;
  */
 public class GenericCallback {
 
-	/**
-	 * 
-	 * @param o
-	 * @return
-	 */
-	public Object callback(Object o, Object o1) {
-		return null;
-	}
-
+    /**
+     * @param o
+     * @return
+     */
+    public Object callback(Object o, Object o1) {
+        return null;
+    }
 }

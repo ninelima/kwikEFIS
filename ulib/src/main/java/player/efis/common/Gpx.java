@@ -16,20 +16,45 @@
 
 package player.efis.common;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Iterator;
+import android.content.Context;
+
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
-import android.content.Context;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
 
 public class Gpx
 {
-	private Context context;
-	public String _region, region; // = "gpx.null.null";
-	public static ArrayList<Apt> aptList = null;
+    public static ArrayList<Apt> aptList = null;
+    public String _region, region; // = "gpx.null.null";
+    private Context context;
+
+    public Gpx(Context context)
+    {
+        this.context = context;
+        aptList = new ArrayList();
+    }
+
+    public static ArrayList<Apt> getAptSelect(float lat, float lon, int range, int nr)
+    {
+        ArrayList<Apt> nearestAptList = new ArrayList();
+
+        for (Apt currProduct : aptList) {
+            // add code to determine  the <nr> apts in range
+            double deltaLat = lat - currProduct.lat;
+            double deltaLon = lon - currProduct.lon;
+            // double d =  Math.hypot(deltaLon, deltaLat);  // in degree, 1 deg = 60 nm
+            double d = Math.sqrt(deltaLon * deltaLon + deltaLat * deltaLat);  // faster then hypot, see www
+
+            if (d < range) {
+                nearestAptList.add(currProduct);
+            }
+        }
+        return nearestAptList;
+    }
 
     //-------------------------------------------------------------------------
     // use the lat lon to determine which region file is active
@@ -37,7 +62,7 @@ public class Gpx
     public String getRegionDatabaseName(float lat, float lon)
     {
         // TODO: Double check this ... It is probably just the quadrants
-        String sRegion = "null";
+        String sRegion;
         if ((lat < -10) && (lon > -20)) {
             sRegion = "gpx.south.east";
         }
@@ -54,13 +79,6 @@ public class Gpx
 
         return sRegion;
     }
-	
-	
-	public Gpx(Context context) 
-	{
-		this.context = context;
-	  aptList = new ArrayList();
-	}
 
     public void loadDatabase(float lat, float lon)
     {
@@ -70,115 +88,87 @@ public class Gpx
         _region = region;
     }
 
-	public void loadDatabase(String database)
-	{
-		region = database;
-		aptList.clear();
-		
-		XmlPullParserFactory pullParserFactory;
-		try {
-			pullParserFactory = XmlPullParserFactory.newInstance();
-			XmlPullParser parser = pullParserFactory.newPullParser();
+    public void loadDatabase(String database)
+    {
+        region = database;
+        aptList.clear();
 
-			InputStream in_s = context.getAssets().open(region + "/airport.gpx.xml");
-			parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
-			parser.setInput(in_s, null);
-			parseXML(parser);
-		}
-		catch (XmlPullParserException e) {
-			e.printStackTrace();
-		}
-		catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	
-	private void parseXML(XmlPullParser parser) throws XmlPullParserException, IOException
-	{
-		int eventType = parser.getEventType();
-		Apt currentWpt = null;
+        XmlPullParserFactory pullParserFactory;
+        try {
+            pullParserFactory = XmlPullParserFactory.newInstance();
+            XmlPullParser parser = pullParserFactory.newPullParser();
 
-		while (eventType != XmlPullParser.END_DOCUMENT) {
-			String txt = null;
-			switch (eventType) {
-			case XmlPullParser.START_DOCUMENT:
-				// To help avoid the ConcurrentModificationException
-				aptList.clear();
-				break;
+            InputStream in_s = context.getAssets().open(region + "/airport.gpx.xml");
+            parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
+            parser.setInput(in_s, null);
+            parseXML(parser);
+        }
+        catch (XmlPullParserException e) {
+            e.printStackTrace();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
-			case XmlPullParser.START_TAG:
-				txt = parser.getName();
-				if (txt.equals("wpt")) {
-					currentWpt = new Apt();
-					if (parser.getAttributeCount() == 2) {
-						String sLat = parser.getAttributeValue(0);
-						String sLon = parser.getAttributeValue(1);
-						currentWpt.lat = Float.valueOf(parser.getAttributeValue(0));
-						currentWpt.lon = Float.valueOf(parser.getAttributeValue(1));
-					}
-				}
-				else if (currentWpt != null) {
-                    if (txt.equals("ele")) {
-                        currentWpt.elev = Float.valueOf(parser.nextText());
+    private void parseXML(XmlPullParser parser) throws XmlPullParserException, IOException
+    {
+        int eventType = parser.getEventType();
+        Apt currentWpt = null;
+
+        while (eventType != XmlPullParser.END_DOCUMENT) {
+            String txt;
+            switch (eventType) {
+                case XmlPullParser.START_DOCUMENT:
+                    // To help avoid the ConcurrentModificationException
+                    aptList.clear();
+                    break;
+
+                case XmlPullParser.START_TAG:
+                    txt = parser.getName();
+                    if (txt.equals("wpt")) {
+                        currentWpt = new Apt();
+                        if (parser.getAttributeCount() == 2) {
+                            String sLat = parser.getAttributeValue(0);
+                            String sLon = parser.getAttributeValue(1);
+                            currentWpt.lat = Float.valueOf(parser.getAttributeValue(0));
+                            currentWpt.lon = Float.valueOf(parser.getAttributeValue(1));
+                        }
                     }
-					if (txt.equals("name")) {
-						currentWpt.name = parser.nextText();
-					}
-					else if (txt.equals("cmt")) {
-						currentWpt.cmt = parser.nextText();
-					}
-				}
-				break;
+                    else if (currentWpt != null) {
+                        if (txt.equals("ele")) {
+                            currentWpt.elev = Float.valueOf(parser.nextText());
+                        }
+                        if (txt.equals("name")) {
+                            currentWpt.name = parser.nextText();
+                        } else if (txt.equals("cmt")) {
+                            currentWpt.cmt = parser.nextText();
+                        }
+                    }
+                    break;
 
-			case XmlPullParser.END_TAG:
-				txt = parser.getName();
-				// Only add non null wpt's that contain exactly 4 upper-case letters
-				if (txt.equalsIgnoreCase("wpt") && currentWpt != null && currentWpt.name.length() == 4 && currentWpt.name.matches("[A-Z]+")) {
-					aptList.add(currentWpt);
-				}
-			}
-			eventType = parser.next();
-		}
-		// printProducts(openairList); // only used for debugging
-	}
-	
-	public static ArrayList<Apt> getAptSelect(float lat, float lon, int range, int nr) 
-	{
-		ArrayList<Apt> nearestAptList = new ArrayList();
+                case XmlPullParser.END_TAG:
+                    txt = parser.getName();
+                    // Only add non null wpt's that contain exactly 4 upper-case letters
+                    if (txt.equalsIgnoreCase("wpt") && currentWpt != null && currentWpt.name.length() == 4 && currentWpt.name.matches("[A-Z]+")) {
+                        aptList.add(currentWpt);
+                    }
+            }
+            eventType = parser.next();
+        }
+        // printProducts(openairList); // only used for debugging
+    }
 
-		Iterator <Apt> it = aptList.iterator(); 
-		while (it.hasNext())
-		{
-			Apt currProduct  = it.next();
-			
-			// add code to determine  the <nr> apts in range 
-			double deltaLat = lat - currProduct.lat;
-			double deltaLon = lon - currProduct.lon;
-			// double d =  Math.hypot(deltaLon, deltaLat);  // in degree, 1 deg = 60 nm 
-			double d =  Math.sqrt(deltaLon*deltaLon + deltaLat*deltaLat);  // faster then hypot, see www 
-			
-			if (d < range) {
-				nearestAptList.add(currProduct);
-			}
-		}
-		return nearestAptList;
-	}
-
-	private void printProducts(ArrayList<Apt> list)
-	{
-		String content = "";
-		Iterator <Apt> it = list.iterator(); 
-		while (it.hasNext())  
-		{
-			Apt currProduct  = it.next();
-			content = content + "\nName :" +  currProduct.name + "\n";
-			content = content + "Cmt :" +  currProduct.cmt + "\n";
-			System.out.println(content); 
-		}
-		//Log.v("b2", "b2 - " + content);
-		//TextView display = (TextView)findViewById(R.id.info);
-		//display.setText(content);
-	}
+    private void printProducts(ArrayList<Apt> list)
+    {
+        String content = "";
+        for (Apt currProduct : list) {
+            content = content + "\nName :" + currProduct.name + "\n";
+            content = content + "Cmt :" + currProduct.cmt + "\n";
+            System.out.println(content);
+        }
+        //Log.v("b2", "b2 - " + content);
+        //TextView display = (TextView) findViewById(R.id.info);
+        //display.setText(content);
+    }
 }
-

@@ -12,95 +12,92 @@ Redistribution and use in source and binary forms, with or without modification,
 package com.stratux.stratuvare.nmea;
 
 /**
- * 
  * @author zkhan
- *
  */
 public class RMBPacket extends Packet {
-    
-    public RMBPacket(long time, double distance, double bearing, double longitude, double latitude, double idNext, double idOrig, double deviation, double speed) {
-        
-        if(idOrig < 0 || idNext < 0) {
+
+    public RMBPacket(long time, double distance, double bearing, double longitude,
+                     double latitude, double idNext, double idOrig, double deviation, double speed) {
+
+        if (idOrig < 0 || idNext < 0) {
             mPacket = "";
             return;
         }
-        
+
         mPacket = "$GPRMB,";
-        
+
         //valid
         mPacket += "A,";
 
         // deviation
         String dir = "R";
-        if(deviation < 0) {
+        if (deviation < 0) {
             dir = "L";
             deviation = -deviation;
         }
-        if(deviation > 9.99) {
+        if (deviation > 9.99) {
             deviation = 9.99;
         }
         mPacket += String.format("%04.2f", deviation);
         mPacket += ",";
         mPacket += dir;
         mPacket += ",";
-        
-        int idi = (int)idOrig;
+
+        int idi = (int) idOrig;
         mPacket += String.format("%03d", idi);
         mPacket += ",";
-        idi = (int)idNext;
+        idi = (int) idNext;
         mPacket += String.format("%03d", idi);
         mPacket += ",";
-        
+
         /*
          * Put latitude
          */
-        if(latitude > 0) {
+        if (latitude > 0) {
             int lat;
             double deg;
-            
-            lat = (int)latitude;
-            deg = (latitude - (double)lat) * 60.0;
-            
+
+            lat = (int) latitude;
+            deg = (latitude - (double) lat) * 60.0;
+
             mPacket += String.format("%02d", lat);
             mPacket += String.format("%06.3f", deg);
             mPacket += ",N,";
-        }
-        else {
+        } else {
             int lat;
             double deg;
             latitude = -latitude;
-            lat = (int)latitude;
-            deg = (latitude - (double)lat) * 60.0;
-            
+            lat = (int) latitude;
+            deg = (latitude - (double) lat) * 60.0;
+
             mPacket += String.format("%02d", lat);
             mPacket += String.format("%06.3f", deg);
-            mPacket += ",S,";            
+            mPacket += ",S,";
         }
 
         /*
          * Put longitude
          */
-        if(longitude > 0) {
+        if (longitude > 0) {
             int lon;
             double deg;
-            
-            lon = (int)longitude;
-            deg = (longitude - (double)lon) * 60.0;
-            
+
+            lon = (int) longitude;
+            deg = (longitude - (double) lon) * 60.0;
+
             mPacket += String.format("%03d", lon);
             mPacket += String.format("%06.3f", deg);
             mPacket += ",E,";
-        }
-        else {
+        } else {
             int lon;
             double deg;
             longitude = -longitude;
-            lon = (int)longitude;
-            deg = (longitude - (double)lon) * 60.0;
-            
+            lon = (int) longitude;
+            deg = (longitude - (double) lon) * 60.0;
+
             mPacket += String.format("%03d", lon);
             mPacket += String.format("%06.3f", deg);
-            mPacket += ",W,";            
+            mPacket += ",W,";
         }
 
         /*
@@ -120,9 +117,7 @@ public class RMBPacket extends Packet {
          */
         mPacket += String.format("%05.1f", speed / 0.514444);
         mPacket += ",V";
-      
-        assemble();
-        
-    }
 
+        assemble();
+    }
 }

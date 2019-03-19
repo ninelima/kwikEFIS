@@ -11,53 +11,50 @@ Redistribution and use in source and binary forms, with or without modification,
 */
 package com.stratux.stratuvare.utils;
 
-import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
 import android.widget.TextView;
 
 /**
- * 
  * @author zkhan
- *
  */
 public class Logger {
 
-    private static TextView mTv;
-    
+        private static TextView mTv;
+/*
+        private static Handler mHandler = new Handler() {
+            @Override
+            public void handleMessage(Message msg) {
+                if (null != msg && null != mTv) {
+                    String txt = mTv.getText().toString();
+                    //
+                    //  Limit buffer size
+                    //
+                    if (txt.length() > 1023) {
+                        txt = txt.substring(0, 1023);
+                    }
+                    mTv.setText(msg.obj + "\n" + txt);
+                }
+            }
+        };
+*/
     public static void Logit(String msg) {
-        /*Message m = mHandler.obtainMessage();
-        m.obj = (Object)msg;
-        mHandler.sendMessage(m);*/
+/*
+        Message m = mHandler.obtainMessage();
+        m.obj = msg;
+        mHandler.sendMessage(m);
+*/
 
         Log.i("Stratux", msg);
     }
-    
+
+    //
+    // This leak warning is not an issue if we do not post delayed messages, which is true here.
+    //
+
     /**
-     * 
      * @param tv
      */
     public static void setTextView(TextView tv) {
         mTv = tv;
     }
-    
-    //
-    // This leak warning is not an issue if we do not post delayed messages, which is true here.
-    //
-    /*private static Handler mHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            if(null != msg && null != mTv) {
-                String txt = mTv.getText().toString();
-                //
-                //  Limit buffer size
-                //
-                if(txt.length() > 1023) {
-                    txt = txt.substring(0, 1023);
-                }
-                mTv.setText((String)msg.obj + "\n" + txt);
-            }
-        }
-    };*/
-    
 }

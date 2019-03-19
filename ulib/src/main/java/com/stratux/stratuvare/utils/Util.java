@@ -11,36 +11,31 @@ Redistribution and use in source and binary forms, with or without modification,
 */
 package com.stratux.stratuvare.utils;
 
-import java.util.Locale;
-
 import android.content.Context;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 
+import java.util.Locale;
+
 /**
- * 
  * @author zkhan
- *
  */
 public class Util {
 
-    
+
     /**
-     * 
      * @param ctx
      * @return
      */
     public static String getIpAddr(Context ctx) {
-        WifiManager wifiManager = (WifiManager)ctx.getSystemService(Context.WIFI_SERVICE);
+        WifiManager wifiManager = (WifiManager) ctx.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         WifiInfo wifiInfo = wifiManager.getConnectionInfo();
         int ip = wifiInfo.getIpAddress();
 
-        String ipString = String.format(Locale.US, "%d.%d.%d.%d",
+        return String.format(Locale.US, "%d.%d.%d.%d",
                 (ip & 0xff),
                 (ip >> 8 & 0xff),
                 (ip >> 16 & 0xff),
                 (ip >> 24 & 0xff));
-
-        return ipString;
     }
 }

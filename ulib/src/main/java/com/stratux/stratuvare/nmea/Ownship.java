@@ -12,7 +12,6 @@ Redistribution and use in source and binary forms, with or without modification,
 package com.stratux.stratuvare.nmea;
 
 /**
- * 
  * @author zkhan
  * A class that combines GGA and RMC message to make an ownship report.
  */
@@ -20,44 +19,42 @@ public class Ownship {
 
     public float mLat;
     public float mLon;
-    
-    public int     mAltitude;
 
-    public int     mHorizontalVelocity;
-    public int     mDirection;
-    
+    public int mAltitude;
+
+    public int mHorizontalVelocity;
+    public int mDirection;
+
     long mTime;
 
     /**
-     * 
+     *
      */
     public Ownship() {
         mTime = 0;
         mLat = 0;
         mLon = 0;
-        
+
         mAltitude = 0;
 
         mHorizontalVelocity = 0;
         mDirection = 0;
     }
-    
+
     /**
-     * 
      * @param m
      * @return If a new report is ready.
      */
     public boolean addMessage(Message m) {
-        
+
         if (m instanceof GGAMessage) {
             mLat = ((GGAMessage) m).mLat;
             mLon = ((GGAMessage) m).mLon;
             mAltitude = ((GGAMessage) m).mAltitude;
             mTime = m.getTime();
-            
+
             return true;
-        }
-        else if(m instanceof RMCMessage) {
+        } else if (m instanceof RMCMessage) {
             mLat = ((RMCMessage) m).mLat;
             mLon = ((RMCMessage) m).mLon;
             mDirection = ((RMCMessage) m).mDirection;
@@ -66,16 +63,15 @@ public class Ownship {
 
             return true;
         }
-        
-        
+
+
         return false;
     }
-    
+
     /**
-     * 
      * @return
      */
     public long getTime() {
-       return mTime; 
+        return mTime;
     }
 }

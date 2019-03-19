@@ -15,21 +15,19 @@ package com.stratux.stratuvare.gdl90;
 import java.util.LinkedList;
 
 /**
- * 
  * @author zkhan
- *
  */
 public class Nexrad {
 
     public static final int INTENSITY[] = {
-        0x00000000,
-        0x00000000,
-        0xFF007F00, // dark green
-        0xFF00AF00, // light green
-        0xFF00FF00, // lighter green
-        0xFFFFFF00, // yellow
-        0xFFFF7F00, // orange
-        0xFFFF0000  // red
+            0x00000000,
+            0x00000000,
+            0xFF007F00, // dark green
+            0xFF00AF00, // light green
+            0xFF00FF00, // lighter green
+            0xFFFFFF00, // yellow
+            0xFFFF7F00, // orange
+            0xFFFF0000  // red
     };
 
     private int mBlock;
@@ -42,7 +40,6 @@ public class Nexrad {
         mBlock = -1;
     }
 
-
     /**
      * Parse graphics
      */
@@ -50,22 +47,22 @@ public class Nexrad {
         /*
          * Get blocks, skip first 3.
          */
-        boolean elementIdentifier = (((int)msg[0]) & 0x80) != 0; // RLE or Empty?
-        
+        boolean elementIdentifier = (((int) msg[0]) & 0x80) != 0; // RLE or Empty?
+
         int len = msg.length;
-        mBlock = ((int)msg[0] & 0x0F) << 16;
-        mBlock += (((int)msg[1] & 0xFF) << 8);
-        mBlock += (int)msg[2] & 0xFF;
-  
+        mBlock = ((int) msg[0] & 0x0F) << 16;
+        mBlock += (((int) msg[1] & 0xFF) << 8);
+        mBlock += (int) msg[2] & 0xFF;
+
         int index = 3;
-        
+
         /*
          * Decode blocks RLE encoded
          */
-        if(elementIdentifier) {
+        if (elementIdentifier) {
             mData = new int[Constants.COLS_PER_BIN * Constants.ROWS_PER_BIN];
             mEmpty = null;
-            
+
             /*
              * Each row element is 1 minute (4 minutes total)
              * Each col element is 1.5 minute (48 minutes total)
@@ -73,13 +70,13 @@ public class Nexrad {
             for (int i = 0; i < Constants.COLS_PER_BIN * Constants.ROWS_PER_BIN; i++) {
                 mData[i] = INTENSITY[0];
             }
-            
+
             int j = 0;
             int i;
-            while(index < len) {
+            while (index < len) {
                 int numberOfBins = ((msg[index] & 0xF8) >> 3) + 1;
-                for(i = 0; i < numberOfBins; i++) {
-                    if(j >= mData.length) {
+                for (i = 0; i < numberOfBins; i++) {
+                    if (j >= mData.length) {
                         /*
                          * Some sort of error.
                          */
@@ -91,62 +88,61 @@ public class Nexrad {
                 }
                 index++;
             }
-        }
-        else {
+        } else {
             /*
              * Make a list of empty blocks
              */
             mData = null;
-            mEmpty = new LinkedList<Integer>();
+            mEmpty = new LinkedList<>();
             mEmpty.add(mBlock);
-            int bitmaplen = (int)msg[index] & 0x0F;
-            
-            if(((int)msg[index] & 0x10) != 0) {
+            int bitmaplen = (int) msg[index] & 0x0F;
+
+            if (((int) msg[index] & 0x10) != 0) {
                 mEmpty.add(mBlock + 1);
             }
-     
-            if(((int)msg[index] & 0x20) != 0) {
+
+            if (((int) msg[index] & 0x20) != 0) {
                 mEmpty.add(mBlock + 2);
             }
-            
-            if(((int)msg[index] & 0x30) != 0) {
+
+            if (((int) msg[index] & 0x30) != 0) {
                 mEmpty.add(mBlock + 3);
             }
-            
-            if(((int)msg[index] & 0x40) != 0) {
+
+            if (((int) msg[index] & 0x40) != 0) {
                 mEmpty.add(mBlock + 4);
             }
-            
-            for(int i = 1; i < bitmaplen; i++) {
-                if(((int)msg[index + i] & 0x01) != 0) {
+
+            for (int i = 1; i < bitmaplen; i++) {
+                if (((int) msg[index + i] & 0x01) != 0) {
                     mEmpty.add(mBlock + i * 8 - 3);
                 }
 
-                if(((int)msg[index + i] & 0x02) != 0) {
+                if (((int) msg[index + i] & 0x02) != 0) {
                     mEmpty.add(mBlock + i * 8 - 2);
                 }
-                
-                if(((int)msg[index + i] & 0x04) != 0) {
+
+                if (((int) msg[index + i] & 0x04) != 0) {
                     mEmpty.add(mBlock + i * 8 - 1);
                 }
-                
-                if(((int)msg[index + i] & 0x08) != 0) {
-                    mEmpty.add(mBlock + i * 8 - 0);
+
+                if (((int) msg[index + i] & 0x08) != 0) {
+                    mEmpty.add(mBlock + i * 8);
                 }
-                
-                if(((int)msg[index + i] & 0x10) != 0) {
+
+                if (((int) msg[index + i] & 0x10) != 0) {
                     mEmpty.add(mBlock + i * 8 + 1);
                 }
 
-                if(((int)msg[index + i] & 0x20) != 0) {
+                if (((int) msg[index + i] & 0x20) != 0) {
                     mEmpty.add(mBlock + i * 8 + 2);
                 }
-                
-                if(((int)msg[index + i] & 0x40) != 0) {
+
+                if (((int) msg[index + i] & 0x40) != 0) {
                     mEmpty.add(mBlock + i * 8 + 3);
                 }
-                
-                if(((int)msg[index + i] & 0x80) != 0) {
+
+                if (((int) msg[index + i] & 0x80) != 0) {
                     mEmpty.add(mBlock + i * 8 + 4);
                 }
             }
@@ -154,26 +150,23 @@ public class Nexrad {
     }
 
     /**
-     * 
      * @return
      */
     public int getBlock() {
         return mBlock;
     }
-    
+
     /**
-     * 
      * @return
      */
     public int[] getData() {
         return mData;
     }
-    
+
     /**
-     * 
      * @return
      */
     public LinkedList<Integer> getEmpty() {
         return mEmpty;
-    }    
+    }
 }

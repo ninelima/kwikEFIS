@@ -23,13 +23,13 @@ import android.preference.PreferenceActivity;
 public class PrefSettings extends PreferenceActivity
 {
 
-	@Override
-	protected void onCreate(Bundle savedInstanceState)
-	{
-		super.onCreate(savedInstanceState);
-		addPreferencesFromResource(R.xml.settings);
+    @Override
+    protected void onCreate(Bundle savedInstanceState)
+    {
+        super.onCreate(savedInstanceState);
+        addPreferencesFromResource(R.xml.settings);
         updateSummary();
-	}
+    }
 
     @SuppressWarnings("deprecation")
     private void updateSummary()
@@ -41,4 +41,3 @@ public class PrefSettings extends PreferenceActivity
     }
 
 }
-

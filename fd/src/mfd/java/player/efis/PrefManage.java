@@ -16,15 +16,12 @@
 
 package player.efis;
 
-import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceScreen;
-import android.view.View;
-import android.widget.ListView;
 
 public class PrefManage extends PreferenceActivity
 {
@@ -38,7 +35,6 @@ public class PrefManage extends PreferenceActivity
         updateSummary();
     }
 
-
     @SuppressWarnings("deprecation")
     private void updateSummary()
     {
@@ -46,8 +42,8 @@ public class PrefManage extends PreferenceActivity
         lp = (ListPreference) findPreference("AircraftModel");
         lp.setSummary(lp.getEntry());
 
-        //lp = (ListPreference) findPreference("colorTheme");
-        //lp.setSummary(lp.getEntry());
+        lp = (ListPreference) findPreference("colorTheme");
+        lp.setSummary(lp.getEntry());
 
         // Get the version number of the app
         PackageInfo pInfo = null;
@@ -66,5 +62,3 @@ public class PrefManage extends PreferenceActivity
         ps.setSummary(version);
     }
 }
-
-

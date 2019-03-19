@@ -12,11 +12,10 @@ public class OpenAirRec
     public int al; //AL FL180
     public int ah; //AH FL245
 
-    public ArrayList<OpenAirPoint> pointList = null;
+    public ArrayList<OpenAirPoint> pointList;
 
     public OpenAirRec()
     {
         pointList = new ArrayList();
     }
-
 }

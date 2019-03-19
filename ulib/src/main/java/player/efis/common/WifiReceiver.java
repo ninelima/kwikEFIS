@@ -10,19 +10,20 @@ import android.net.wifi.WifiManager;
 public class WifiReceiver extends BroadcastReceiver
 {
 
-   @Override
-   public void onReceive(Context context, Intent intent) {
+    @Override
+    public void onReceive(Context context, Intent intent)
+    {
 
-      NetworkInfo info = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
-      if(info != null && info.isConnected()) {
-        // Do your work. 
+        NetworkInfo info = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
+        if (info != null && info.isConnected()) {
+            // Do your work.
 
-        // e.g. To check the Network Name or other info:
-        WifiManager wifiManager = (WifiManager)context.getSystemService(Context.WIFI_SERVICE);
-        WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-        String ssid = wifiInfo.getSSID();
-      }
-   }
+            // e.g. To check the Network Name or other info:
+            WifiManager wifiManager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+            String ssid = wifiInfo.getSSID();
+        }
+    }
 }
 
 
@@ -32,10 +33,10 @@ public class WifiReceiver extends BroadcastReceiver
 */
 
 /*
-public boolean isConnectedWifi(Context context) 
+public boolean isConnectedWifi(Context context)
 {
     ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-    NetworkInfo networkInfo = connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);     
+    NetworkInfo networkInfo = connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
     return networkInfo.isConnected();
 }
 */

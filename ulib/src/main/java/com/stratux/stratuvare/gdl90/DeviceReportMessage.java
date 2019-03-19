@@ -14,9 +14,7 @@ package com.stratux.stratuvare.gdl90;
 import com.stratux.stratuvare.utils.Logger;
 
 /**
- * 
  * @author zkhan
- *
  */
 public class DeviceReportMessage extends Message {
 
@@ -26,9 +24,8 @@ public class DeviceReportMessage extends Message {
     public DeviceReportMessage() {
         super(MessageType.DEVICE_REPORT);
     }
-    
+
     /**
-     * 
      * @param msg
      */
     public void parse(byte msg[]) {
@@ -37,29 +34,21 @@ public class DeviceReportMessage extends Message {
          * Battery status
          */
         int vbat = 0;
-        vbat = ((int)msg[0] & 0xFF) << 8;
-        vbat += ((int)msg[1]) & 0xFF;
-        float batLevel = (float)(vbat - 3500) / 600.0f;
+        vbat = ((int) msg[0] & 0xFF) << 8;
+        vbat += ((int) msg[1]) & 0xFF;
+        float batLevel = (float) (vbat - 3500) / 600.0f;
         if (batLevel > 1.0) {
             mBatteryVoltage = 1.0f;
-        }
-        else if (batLevel < 0) {
+        } else if (batLevel < 0) {
             mBatteryVoltage = 0.0f;
-        }
-        else {
+        } else {
             mBatteryVoltage = batLevel;
         }
-        
+
         /*
          * Charge
          */
-        if( (msg[4] & 0x04) != 0) {
-            mIsCharging = true;
-        }
-        else {
-            mIsCharging   = false;
-        }
+        mIsCharging = (msg[4] & 0x04) != 0;
         Logger.Logit("charging " + mIsCharging + " voltage " + mBatteryVoltage);
     }
-
 }

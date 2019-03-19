@@ -13,11 +13,8 @@ package com.stratux.stratuvare.gdl90;
 
 import com.stratux.stratuvare.utils.Logger;
 
-
 /**
- * 
  * @author zkhan
- *
  */
 public class TrafficReportMessage extends Message {
 
@@ -42,7 +39,6 @@ public class TrafficReportMessage extends Message {
     }
 
     /**
-     * 
      * @param highByte
      * @param midByte
      * @param lowByte
@@ -50,43 +46,42 @@ public class TrafficReportMessage extends Message {
      */
     private float calculateDegrees(int highByte, int midByte, int lowByte) {
         int position = 0;
-        
+
         float xx;
-        
+
         position = highByte;
         position <<= 8;
         position |= midByte;
         position <<= 8;
         position |= lowByte;
         position &= 0xFFFFFFFF;
-        
+
         if ((position & 0x800000) != 0) {
             int yy;
-            
+
             position |= 0xFF000000;
-            
-            yy = (int) position;
-            xx = (float)(yy);
-        }
-        else {
+
+            yy = position;
+            xx = (float) (yy);
+        } else {
             xx = (position & 0x7FFFFF);
-        }    
+        }
 
         xx *= Constants.LON_LAT_RESOLUTION;
-        
+
         return xx;
     }
 
-    
+
     @Override
     protected void parse(byte[] msg) {
-        
+
         /*
          * upper nibble of first byte is the traffic alert mStatus
          */
         mStatus = (msg[0] & 0xF0) >> 4;
-        
-        /* 
+
+        /*
          * lower nibble of first byte is the address type:
          * 0 = ADS-B with ICAO address
          * 1 = ADS-B with self-assigned address
@@ -97,33 +92,33 @@ public class TrafficReportMessage extends Message {
          * 6-15 = reserved
          */
         mAddressType = msg[0] & 0x0F;
-        
+
         /*
          * next three bytes are the traffic's ICAO address
          */
         mIcaoAddress = 0;
-        mIcaoAddress = ((((int)msg[1]) & 0xFF) << 16) + ((((int)(msg[2]) & 0xFF) << 8)) + ((((int)msg[3]) & 0xFF));
+        mIcaoAddress = ((((int) msg[1]) & 0xFF) << 16) + ((((int) (msg[2]) & 0xFF) << 8)) + ((((int) msg[3]) & 0xFF));
 
         /*
          * next 3 bytes are lat value with resolution = 180 / (2^23) degrees
          */
-        mLat = this.calculateDegrees((int)(msg[4] & 0xFF), (int)(msg[5] & 0xFF), (int)(msg[6] & 0xFF));
+        mLat = this.calculateDegrees((msg[4] & 0xFF), (msg[5] & 0xFF), (msg[6] & 0xFF));
 
         /*
          * next 3 bytes are lon value with resolution = 180 / (2^23) degrees
          */
-        mLon = this.calculateDegrees((int)(msg[7] & 0xFF), (int)(msg[8] & 0xFF), (int)(msg[9] & 0xFF));
-        
+        mLon = this.calculateDegrees((msg[7] & 0xFF), (msg[8] & 0xFF), (msg[9] & 0xFF));
+
         /*
          * next 12 bits are altitude
          */
-        int upper = (((int)msg[10]) & 0xFF) << 4;
-        int lower = (((int)msg[11]) & 0xF0) >> 4;
+        int upper = (((int) msg[10]) & 0xFF) << 4;
+        int lower = (((int) msg[11]) & 0xF0) >> 4;
         mAltitude = upper + lower;
         mAltitude *= 25;
         mAltitude -= 1000;
 
-        /* 
+        /*
          * next nibble is miscellaneous indicators:
          * bit 3   bit 2    bit 1    bit 0
          *   x       x        0        0    = mHeading not valid
@@ -135,42 +130,42 @@ public class TrafficReportMessage extends Message {
          *   0       x        x        x    = on ground
          *   1       x        x        x    = airborne
          */
-        mMiscInd = ((int)msg[11] & 0x0F);
-        
+        mMiscInd = ((int) msg[11] & 0x0F);
+
         /*
          * Next nibble is the navigation integrity category (nic). (See GDL-90 spec pg. 21.)
          */
-        mNic = ((int)msg[12] & 0xF0) >> 4;
-        
+        mNic = ((int) msg[12] & 0xF0) >> 4;
+
         /*
          * Next nibble is navigation accuracy category for position (nacP)
          */
-        mNacp = (int)msg[12] & 0x0F;
-        
+        mNacp = (int) msg[12] & 0x0F;
+
         /*
          * next 12 bits are horizontal velocity in knots. (0xFFF = unknown)
          */
-        upper = ((int)msg[13] & 0xFF) << 4;
-        lower = ((int)msg[14] & 0xF0) >> 4;
+        upper = ((int) msg[13] & 0xFF) << 4;
+        lower = ((int) msg[14] & 0xF0) >> 4;
         mHorizVelocity = upper | lower;
-        
+
         /*
          * next 12 bits are vertical velocity in units of 64 fpm. (0xFFF = unknown)
          */
-        upper = ((int)msg[14] & 0x0F) << 8;
-        lower = (int)msg[15] & 0xFF;
+        upper = ((int) msg[14] & 0x0F) << 8;
+        lower = (int) msg[15] & 0xFF;
         mVertVelocity = (upper | lower) * 64;
-        
+
         /*
          * next nibble is the track heading with resolution = 360/256
          */
-        mHeading = ((float)((int)msg[16] & 0xFF)) * 360.f / 256.f;
-        
+        mHeading = ((float) ((int) msg[16] & 0xFF)) * 360.f / 256.f;
+
         /*
          * next byte is emitter category. see GDL-90 spec page 23
          */
         mEmitCategory = msg[17] & 0xFF;
-        
+
         /*
          * next 8 bytes are callsign
          */
@@ -188,11 +183,10 @@ public class TrafficReportMessage extends Message {
         /*
          * next 4 bits are emergency/priority code
          */
-        emergencyPriorityCode = ((int)msg[26] & 0xF0) >> 4;
-        
-        Logger.Logit("Traffic report callsign " + mCallSign + " icao addr " + mIcaoAddress + 
+        emergencyPriorityCode = ((int) msg[26] & 0xF0) >> 4;
+
+        Logger.Logit("Traffic report callsign " + mCallSign + " icao addr " + mIcaoAddress +
                 " lat/lon " + mLat + "/" + mLon + " mAltitude " + mAltitude +
                 " heading " + mHeading);
     }
-
 }

@@ -14,9 +14,7 @@ package com.stratux.stratuvare.gdl90;
 import com.stratux.stratuvare.utils.Logger;
 
 /**
- * 
  * @author zkhan
- *
  */
 public class UplinkMessage extends Message {
 
@@ -25,81 +23,79 @@ public class UplinkMessage extends Message {
     public UplinkMessage() {
         super(MessageType.UPLINK);
     }
-    
+
     /**
-    *
-    * @param msg
-    */
-   public void parse(byte msg[]) {
-       
-       /*
-        * First 3 bytes are Zulu time,
-        * Next 8 is UAT header
-        * Rest of 424 is payload
-        * 
-        */
-       int skip = 3;
-       int lat = 0;
-       lat += ((int)msg[skip + 0]) & 0xFF;
-       lat <<= 8;
-       lat += ((int)msg[skip + 1]) & 0xFF;
-       lat <<= 8;
-       lat += ((int)msg[skip + 2]) & 0xFE;
-       lat >>= 1;
-       
-       boolean isSouth = (lat & 0x800000) != 0;
-       float degLat = (float)lat * (float)Constants.LON_LAT_RESOLUTION;
-       if(isSouth) {
-           degLat *= -1;
-       }
+     * @param msg
+     */
+    public void parse(byte msg[]) {
 
-       int lon = 0;
-       lon += ((int)msg[skip + 3]) & 0xFF;
-       lon <<= 8;
-       lon += ((int)msg[skip + 4]) & 0xFF;
-       lon <<= 8;
-       lon += ((int)msg[skip + 5]) & 0xFE;
-       lon >>= 1;
-       if((msg[skip + 2] & 0x01) != 0) {
-           lon += 0x800000;
-       }
-       
-       boolean isWest = (lon & 0x800000) != 0;
-       float degLon = (lon & 0x7fffff) * (float)Constants.LON_LAT_RESOLUTION;
-       if(isWest) {
-           degLon = -1.f * (180.f - degLon);
-       }
-       
-       boolean positionValid = (msg[skip + 5] & 0x01) != 0;
-       
-       boolean applicationDataValid = (msg[skip + 6] & 0x20) != 0;
-       if(false == applicationDataValid) {
-           return;
-       }
-       
-       // byte 6, bits 4-8: slot ID
-       int slotID = msg[skip + 6] & 0x1f;
+        /*
+         * First 3 bytes are Zulu time,
+         * Next 8 is UAT header
+         * Rest of 424 is payload
+         *
+         */
+        int skip = 3;
+        int lat = 0;
+        lat += ((int) msg[skip]) & 0xFF;
+        lat <<= 8;
+        lat += ((int) msg[skip + 1]) & 0xFF;
+        lat <<= 8;
+        lat += ((int) msg[skip + 2]) & 0xFE;
+        lat >>= 1;
 
-       // byte 7, bit 1-4: TIS-B site ID. If zero, the broadcasting station is not broadcasting TIS-B data
-       int tisbSiteID = (msg[skip + 7] & 0xf0) >> 4;
-       
-       // byte 9-432: application data (multiple iFrames).
-       skip = 3 + 8;
-       mFis = new FisBuffer(msg, skip, slotID, tisbSiteID, positionValid, degLat, degLon, tisbSiteID);
-       
-       /*
-        * Now decode all.
-        */
-       mFis.makeProducts();
-       
-       Logger.Logit("Uplink message");
-   }
-   
-   /**
-    * 
-    * @return
-    */
-   public FisBuffer getFis() {
-       return mFis;
-   }
+        boolean isSouth = (lat & 0x800000) != 0;
+        float degLat = (float) lat * (float) Constants.LON_LAT_RESOLUTION;
+        if (isSouth) {
+            degLat *= -1;
+        }
+
+        int lon = 0;
+        lon += ((int) msg[skip + 3]) & 0xFF;
+        lon <<= 8;
+        lon += ((int) msg[skip + 4]) & 0xFF;
+        lon <<= 8;
+        lon += ((int) msg[skip + 5]) & 0xFE;
+        lon >>= 1;
+        if ((msg[skip + 2] & 0x01) != 0) {
+            lon += 0x800000;
+        }
+
+        boolean isWest = (lon & 0x800000) != 0;
+        float degLon = (lon & 0x7fffff) * (float) Constants.LON_LAT_RESOLUTION;
+        if (isWest) {
+            degLon = -1.f * (180.f - degLon);
+        }
+
+        boolean positionValid = (msg[skip + 5] & 0x01) != 0;
+
+        boolean applicationDataValid = (msg[skip + 6] & 0x20) != 0;
+        if (!applicationDataValid) {
+            return;
+        }
+
+        // byte 6, bits 4-8: slot ID
+        int slotID = msg[skip + 6] & 0x1f;
+
+        // byte 7, bit 1-4: TIS-B site ID. If zero, the broadcasting station is not broadcasting TIS-B data
+        int tisbSiteID = (msg[skip + 7] & 0xf0) >> 4;
+
+        // byte 9-432: application data (multiple iFrames).
+        skip = 3 + 8;
+        mFis = new FisBuffer(msg, skip, slotID, tisbSiteID, positionValid, degLat, degLon, tisbSiteID);
+
+        /*
+         * Now decode all.
+         */
+        mFis.makeProducts();
+
+        Logger.Logit("Uplink message");
+    }
+
+    /**
+     * @return
+     */
+    public FisBuffer getFis() {
+        return mFis;
+    }
 }

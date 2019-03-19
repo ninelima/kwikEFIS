@@ -19,15 +19,15 @@ package player.efis.common;
 
 public enum prefs_t
 {
-	DEM,
-	AH_COLOR,
-	TAPE,
-	MIRROR,
-	INFO_PAGE,
-	FLIGHT_DIRECTOR,
-	REMOTE_INDICATOR,
-	AIRPORT,
-	AIRSPACE,
-	HITS,
-	DEMO_MODE
+    DEM,
+    AH_COLOR,
+    TAPE,
+    MIRROR,
+    INFO_PAGE,
+    FLIGHT_DIRECTOR,
+    REMOTE_INDICATOR,
+    AIRPORT,
+    AIRSPACE,
+    HITS,
+    DEMO_MODE
 }

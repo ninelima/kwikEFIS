@@ -14,20 +14,17 @@ package com.stratux.stratuvare.gdl90;
 import com.stratux.stratuvare.utils.Logger;
 
 /**
- * 
  * @author zkhan
- *
  */
 public class OwnshipGeometricAltitudeMessage extends Message {
 
     public int mAltitudeWGS84;
-    
+
     public OwnshipGeometricAltitudeMessage() {
         super(MessageType.OWNSHIP_GEOMETRIC_ALTITUDE);
     }
 
     /**
-     * 
      * @param msg
      */
     public void parse(byte msg[]) {
@@ -35,23 +32,20 @@ public class OwnshipGeometricAltitudeMessage extends Message {
         /*
          *  bytes 0-1 are the altitude
          */
-        int upper = ((int)msg[0] & 0xFF) << 8;
-        int lower = ((int)msg[1] & 0xFF);
-        if(upper == 0xFF00 && lower >= 0xE0) {
+        int upper = ((int) msg[0] & 0xFF) << 8;
+        int lower = ((int) msg[1] & 0xFF);
+        if (upper == 0xFF00 && lower >= 0xE0) {
             /*
              * Invalid
              */
             mAltitudeWGS84 = -305; // 1000 ft
-        }
-        else {
+        } else {
             double alt = upper + lower;
             alt *= 5;
             alt /= 3.28084;
-            mAltitudeWGS84 = (int)alt;
+            mAltitudeWGS84 = (int) alt;
         }
-        
-        Logger.Logit("mAltitude Geometric "  + mAltitudeWGS84);        
+
+        Logger.Logit("mAltitude Geometric " + mAltitudeWGS84);
     }
-
-
 }

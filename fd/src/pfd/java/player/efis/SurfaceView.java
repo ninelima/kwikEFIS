@@ -34,7 +34,13 @@ public class SurfaceView extends GLSurfaceView
 {
 
     //private final Renderer mRenderer;
-    public final player.efis.Renderer mRenderer;  // normally this would be private but we want to access the sel wpt from main activity
+    public final player.efis.Renderer mRenderer;
+    // normally this would be private but we want to access the sel wpt from main activity
+    private final int MIN_DISTANCE = 150;
+    //private final float TOUCH_SCALE_FACTOR = 180.0f / 320;
+    private float mPreviousX;
+    private float mPreviousY;
+    private boolean primed = false;
 
     public SurfaceView(Context context)
     {
@@ -51,13 +57,6 @@ public class SurfaceView extends GLSurfaceView
         setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
     }
 
-    //private final float TOUCH_SCALE_FACTOR = 180.0f / 320;
-    private float mPreviousX;
-    private float mPreviousY;
-    private final int MIN_DISTANCE = 150;
-    private boolean primed = false;
-
-
     @Override
     public boolean onTouchEvent(MotionEvent e)
     {
@@ -69,7 +68,8 @@ public class SurfaceView extends GLSurfaceView
         float y = e.getY();
 
         switch (e.getAction()) {
-            /* We dont use movement messages, maybe later ...
+            // We don't use movement messages, maybe later...
+            /*
             case MotionEvent.ACTION_MOVE:
 
                 float dx = x - mPreviousX;
@@ -103,7 +103,8 @@ public class SurfaceView extends GLSurfaceView
                 float deltaY = y - mPreviousY;
 
                 if (Math.abs(deltaY) > MIN_DISTANCE) {
-                    if (mRenderer.isAutoZoomActive()) Toast.makeText(getContext(), "Auto Zoom OFF", Toast.LENGTH_SHORT).show();
+                    if (mRenderer.isAutoZoomActive())
+                        Toast.makeText(getContext(), "Auto Zoom OFF", Toast.LENGTH_SHORT).show();
                     if (deltaY < 0) {
                         // swipe up
                     }
@@ -377,7 +378,7 @@ public class SurfaceView extends GLSurfaceView
     public void setTheme(int value)
     {
         if (value == 2) mRenderer.setThemeGreen();
-        else if (value == 1)  mRenderer.setThemeLight();
+        else if (value == 1) mRenderer.setThemeLight();
         else mRenderer.setThemeDark(); // the default
         requestRender();
     }
@@ -400,14 +401,11 @@ public class SurfaceView extends GLSurfaceView
         requestRender();
     }
 
-
-    /*public void setFlightDirector(boolean active, float pit, float rol)
+/*
+    public void setFlightDirector(boolean active, float pit, float rol)
     {
         mRenderer.setFlightDirector(active, pit, rol);
         requestRender();
-    }*/
-
-
-
-
+    }
+*/
 }

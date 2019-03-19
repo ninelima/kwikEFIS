@@ -12,9 +12,7 @@ Redistribution and use in source and binary forms, with or without modification,
 package com.stratux.stratuvare.nmea;
 
 /**
- * 
  * @author zkhan
- *
  */
 public class MessageType {
 

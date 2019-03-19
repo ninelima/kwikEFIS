@@ -13,65 +13,61 @@ package com.stratux.stratuvare.gdl90;
 
 /**
  * A class that reads bits from a data stream.
- * @author zkhan
  *
+ * @author zkhan
  */
 public class BitInputStream {
 
     private byte mBuffer[];
     private int mLocation;
- 
+
     private int mIBuffer;
-    
- 
+
+
     private int mBitsLeft;
- 
+
     /**
-     * 
      * @param buffer
      */
     public BitInputStream(byte buffer[]) {
         mBuffer = buffer;
         mLocation = 0;
         mBitsLeft = 8;
-        mIBuffer = ((int)buffer[0]) & 0xFF;
+        mIBuffer = ((int) buffer[0]) & 0xFF;
     }
- 
+
     /**
-     * 
      * @param aNumberOfBits
      * @return
      */
     public int getBits(final int aNumberOfBits) {
         int value = 0;
         int num = aNumberOfBits;
-        while(num-- > 0) {
+        while (num-- > 0) {
             value <<= 1;
             value |= readBit();
         }
         return value;
     }
- 
+
     /**
-     * 
      * @return
      */
-    public int readBit() { 
+    public int readBit() {
         if (mBitsLeft == 0) {
-            mIBuffer = ((int)mBuffer[++mLocation]) & 0xFF;
+            mIBuffer = ((int) mBuffer[++mLocation]) & 0xFF;
             mBitsLeft = 8;
         }
- 
+
         mBitsLeft--;
         int bit = (mIBuffer >> mBitsLeft) & 0x1;
- 
+
         bit = (bit == 0) ? 0 : 1;
- 
+
         return bit;
-    } 
-    
+    }
+
     /**
-     * 
      * @return
      */
     public int totalRead() {

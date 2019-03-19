@@ -17,28 +17,26 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 /**
- * 
  * @author zkhan
- * 
+ * <p>
  * This class is a demo class that shows how to send NMEA packets to Stratuvare from other apps.
  * In this case traffic message from ADSB with a made up NMEA message.
- *
  */
 public class RTMPacket extends Packet {
-    
+
     public RTMPacket(
-        long time,
-        int icaoAddress,
-        float latitude,
-        float longitude,
-        int altitude,
-        int horizVelocity,
-        int vertVelocity,
-        float heading,
-        String callSign) {
-        
+            long time,
+            int icaoAddress,
+            float latitude,
+            float longitude,
+            int altitude,
+            int horizVelocity,
+            int vertVelocity,
+            float heading,
+            String callSign) {
+
         mPacket = "$GPRTM,";
-        
+
         /*
          * Convert to UTC system time, and format to hhmmss as in NMEA
          */
@@ -46,60 +44,58 @@ public class RTMPacket extends Packet {
         SimpleDateFormat sdf = new SimpleDateFormat("HHmmss", Locale.US);
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         mPacket += sdf.format(date) + ",";
-        
+
         //icao
         mPacket += Integer.toString(icaoAddress) + ",";
 
         /*
          * Put latitude
          */
-        if(latitude > 0) {
+        if (latitude > 0) {
             int lat;
             double deg;
-            
-            lat = (int)latitude;
-            deg = (latitude - (double)lat) * 60.0;
-            
+
+            lat = (int) latitude;
+            deg = (latitude - (double) lat) * 60.0;
+
             mPacket += String.format("%02d", lat);
             mPacket += String.format("%06.3f", deg);
             mPacket += ",N,";
-        }
-        else {
+        } else {
             int lat;
             double deg;
             latitude = -latitude;
-            lat = (int)latitude;
-            deg = (latitude - (double)lat) * 60.0;
-            
+            lat = (int) latitude;
+            deg = (latitude - (double) lat) * 60.0;
+
             mPacket += String.format("%02d", lat);
             mPacket += String.format("%06.3f", deg);
-            mPacket += ",S,";            
+            mPacket += ",S,";
         }
 
         /*
          * Put longitude
          */
-        if(longitude > 0) {
+        if (longitude > 0) {
             int lon;
             double deg;
-            
-            lon = (int)longitude;
-            deg = (longitude - (double)lon) * 60.0;
-            
+
+            lon = (int) longitude;
+            deg = (longitude - (double) lon) * 60.0;
+
             mPacket += String.format("%03d", lon);
             mPacket += String.format("%06.3f", deg);
             mPacket += ",E,";
-        }
-        else {
+        } else {
             int lon;
             double deg;
             longitude = -longitude;
-            lon = (int)longitude;
-            deg = (longitude - (double)lon) * 60.0;
-            
+            lon = (int) longitude;
+            deg = (longitude - (double) lon) * 60.0;
+
             mPacket += String.format("%03d", lon);
             mPacket += String.format("%06.3f", deg);
-            mPacket += ",W,";            
+            mPacket += ",W,";
         }
 
         /*
@@ -133,7 +129,5 @@ public class RTMPacket extends Packet {
         mPacket += ",";
 
         assemble();
-        
     }
-
 }

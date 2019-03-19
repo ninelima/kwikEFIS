@@ -25,25 +25,25 @@ public class UMath {
     //
     // @param tolerancePercentage 1 = 1%, 2.5 = 2.5%, etc.
     //
-    public static boolean approximatelyEqual(float desiredValue, float actualValue, float tolerancePercentage) 
+    public static boolean approximatelyEqual(float desiredValue, float actualValue, float tolerancePercentage)
     {
         float diff = Math.abs(desiredValue - actualValue);         //  1000 - 950  = 50
-        float tolerance = tolerancePercentage/100 * desiredValue;  //  20/100*1000 = 200
+        float tolerance = tolerancePercentage / 100 * desiredValue;  //  20/100*1000 = 200
         return diff < tolerance;                                   //  50<200      = true
     }
-    
-    public static float clamp(float val, float min, float max) 
+
+    public static float clamp(float val, float min, float max)
     {
         return Math.max(min, Math.min(max, val));
     }
 
-    public static float round (float value, int precision)
+    public static float round(float value, int precision)
     {
         int scale = (int) Math.pow(10, precision);
         return (float) Math.round(value * scale) / scale;
     }
 
-    public static double round (double value, int precision)
+    public static double round(double value, int precision)
     {
         int scale = (int) Math.pow(10, precision);
         return (double) Math.round(value * scale) / scale;

@@ -12,23 +12,18 @@ Redistribution and use in source and binary forms, with or without modification,
 
 package com.stratux.stratuvare.nmea;
 
-import com.stratux.stratuvare.nmea.Message;
-import com.stratux.stratuvare.nmea.MessageFactory;
-
 /**
- * 
  * @author zkhan
- *
+ * <p>
  * http://www.gpsinformation.org/dale/nmea.htm#RMC
  */
-public class Decode {    
+public class Decode {
     /**
-     * 
      * @param bufin
      * @return
      */
     public Message decode(byte[] bufin) {
-        
+
         return MessageFactory.buildMessage(bufin);
     }
 }

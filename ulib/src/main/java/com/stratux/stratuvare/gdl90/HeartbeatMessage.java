@@ -11,74 +11,71 @@ Redistribution and use in source and binary forms, with or without modification,
 */
 package com.stratux.stratuvare.gdl90;
 
-import android.util.Log;
-
 import com.stratux.stratuvare.utils.Logger;
 
 /**
- * 
  * @author zkhan
- *
  */
 public class HeartbeatMessage extends Message {
-
-    int mHour;
-    int mMinute;
-    int mSecond;
 
     public long mTimeStamp;
     public Boolean mGpsPositionValid;
     public Boolean mBatteryLow;
     public Boolean mDeviceRunning;
+    int mHour;
+    int mMinute;
+    int mSecond;
 
     public HeartbeatMessage() {
         super(MessageType.HEARTBEAT);
     }
 
     /**
-    *
-    * @param msg
-    */
-   public void parse(byte msg[]) {
-       /*
-        * Some useful fields
-        */
-       int d = msg[0] & 0xFF;
-       mGpsPositionValid = (d & 0x80L) != 0;
-       mBatteryLow = (d & 0x40L) != 0;
-       mDeviceRunning = (d & 0x01L) != 0;
+     * @param msg
+     */
+    public void parse(byte msg[]) {
+        /*
+         * Some useful fields
+         */
+        int d = msg[0] & 0xFF;
+        mGpsPositionValid = (d & 0x80L) != 0;
+        mBatteryLow = (d & 0x40L) != 0;
+        mDeviceRunning = (d & 0x01L) != 0;
 
-       /*
-        * Get time
-        */
-       int d1 = msg[1] & 0xFF;
-       int d2 = msg[2] & 0xFF;
-       int d3 = msg[3] & 0xFF;
+        /*
+         * Get time
+         */
+        int d1 = msg[1] & 0xFF;
+        int d2 = msg[2] & 0xFF;
+        int d3 = msg[3] & 0xFF;
 
-       mTimeStamp = ((d1 & 0x80L) << 9) | (d3 << 8) | d2;
+        mTimeStamp = ((d1 & 0x80L) << 9) | (d3 << 8) | d2;
 
-       /*double mHourFrac = (float)mTimeStamp / 3600.0f;
-       mHour = (int)Math.floor((double)mHourFrac);
-       double mMinuteFrac = (double)mHourFrac - (double)mHour;
-       mMinute = (int)Math.floor((double)mMinuteFrac * 60.0f);
-       double mSecondsFrac = (mMinuteFrac * 60) - mMinute;
-       mSecond = (int)Math.round(mSecondsFrac * 60.0f);
-       if(mSecond == 60) {
-           mSecond = 0;
-           mMinute++;
-       }
-       if(mMinute == 60) {
-           mMinute = 0;
-           mHour++;
-       }
-       Logger.Logit(" mHour " + mHour + " mMinute " + mMinute + " mSecond " + mSecond + " isBatteryLow " + mBatteryLow);
-       */
-       Logger.Logit("Timestamp: " + mTimeStamp
-               + " IsDeviceRunning: "  + mDeviceRunning
-               + " GpsPositionValid: " + mGpsPositionValid
-               + " IsBatteryLow: "     + mBatteryLow
-               + " isBatteryLow: " + mBatteryLow
-               );
-   }
-
+/*
+        double mHourFrac = (float) mTimeStamp / 3600.0f;
+        mHour = (int) Math.floor(mHourFrac);
+        double mMinuteFrac = mHourFrac - (double) mHour;
+        mMinute = (int) Math.floor(mMinuteFrac * 60.0f);
+        double mSecondsFrac = (mMinuteFrac * 60) - mMinute;
+        mSecond = (int) Math.round(mSecondsFrac * 60.0f);
+        if (mSecond == 60) {
+            mSecond = 0;
+            mMinute++;
+        }
+        if (mMinute == 60) {
+            mMinute = 0;
+            mHour++;
+        }
+        Logger.Logit(" mHour " + mHour
+                + " mMinute " + mMinute
+                + " mSecond " + mSecond
+                + " isBatteryLow " + mBatteryLow);
+*/
+        Logger.Logit("Timestamp: " + mTimeStamp
+                + " IsDeviceRunning: " + mDeviceRunning
+                + " GpsPositionValid: " + mGpsPositionValid
+                + " IsBatteryLow: " + mBatteryLow
+                + " isBatteryLow: " + mBatteryLow
+        );
+    }
 }

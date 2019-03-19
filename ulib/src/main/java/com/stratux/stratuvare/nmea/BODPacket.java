@@ -12,21 +12,19 @@ Redistribution and use in source and binary forms, with or without modification,
 package com.stratux.stratuvare.nmea;
 
 /**
- * 
  * @author zkhan
- *
  */
 public class BODPacket extends Packet {
-    
+
     public BODPacket(double idDest, double idStart, double bearingTrue, double bearingMag) {
-        
-        if(idDest < 0 || idStart < 0) {
+
+        if (idDest < 0 || idStart < 0) {
             mPacket = "";
             return;
         }
-        
+
         mPacket = "$GPBOD,";
-        
+
         /*
          * Put bearingTrue
          */
@@ -39,15 +37,12 @@ public class BODPacket extends Packet {
         mPacket += String.format("%05.1f", bearingMag);
         mPacket += ",M,";
 
-        int idi = (int)idDest;
+        int idi = (int) idDest;
         mPacket += String.format("%03d", idi);
         mPacket += ",";
-        idi = (int)idStart;
+        idi = (int) idStart;
         mPacket += String.format("%03d", idi);
-        
-      
-        assemble();
-        
-    }
 
+        assemble();
+    }
 }

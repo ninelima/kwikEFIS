@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
     Copyright (C) 2011 The Android Open Source Project.
 
     Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,23 +16,21 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:orientation="vertical" >
+    android:orientation="vertical">
 
     <TextView
         android:layout_width="fill_parent"
         android:layout_height="wrap_content" />
-    
-<!--  
-This is as per the "version/menu" description on Stackoverflow.com
-It does not do much for us ...
-<TextView
+
+    <!--
+    This is as per the "version/menu" description on Stackoverflow.com
+    It does not do much for us ...-->
+    <!--TextView
         android:id="@+id/versionName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true"
         android:layout_marginTop="16dp"
-        android:text="What Version?"
+        android:text="@string/what_version"
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:textStyle="bold" />
 
@@ -41,11 +38,8 @@ It does not do much for us ...
         android:id="@+id/textView1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/versionName"
         android:layout_marginTop="16dp"
         android:text="@string/copyright"
-        android:textAppearance="?android:attr/textAppearanceMedium" />
-        -->    
-    
+        android:textAppearance="?android:attr/textAppearanceMedium" /-->
 
 </LinearLayout>

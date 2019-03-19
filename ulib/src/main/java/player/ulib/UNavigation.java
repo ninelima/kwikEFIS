@@ -28,8 +28,7 @@ public class UNavigation {
         float deltaLon = lon2 - lon1;
 
         //d =  364800 * Math.hypot(deltaLon, deltaLat);  // in ft, 1 deg of lat  6080 * 60 = 364,80 note hypot uses convergenge and is very slow.
-        float d = (float) (60 * Math.sqrt(deltaLon * deltaLon + deltaLat * deltaLat));  // in nm, 1 deg of lat
-        return d;
+        return (float) (60 * Math.sqrt(deltaLon * deltaLon + deltaLat * deltaLat));
 
     }
 
@@ -88,7 +87,7 @@ public class UNavigation {
     {
         angle = (angle) % 360;
 
-        if (angle >  180) angle = angle - 360;
+        if (angle > 180) angle = angle - 360;
         if (angle < -180) angle = angle + 360;
         return angle;
     }
@@ -101,7 +100,7 @@ public class UNavigation {
     {
         angle = (angle) % 360;
 
-        if (angle <  0) angle = angle + 360;
+        if (angle < 0) angle = angle + 360;
         return angle;
     }
 
@@ -114,8 +113,6 @@ public class UNavigation {
         float d = Float.valueOf(dms.split(":")[0]);
         float m = Float.valueOf(dms.split(":")[1]);
         float s = Float.valueOf(dms.split(":")[2]);
-        return (float)d + (float)m/60f + (float)s/3600f;
+        return d + m / 60f + s / 3600f;
     }
-
-
 }

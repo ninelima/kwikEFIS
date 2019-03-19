@@ -26,6 +26,8 @@ package player.efis.common;
 
 import com.stratux.stratuvare.gdl90.BasicReportMessage;
 import com.stratux.stratuvare.gdl90.Constants;
+import com.stratux.stratuvare.gdl90.DataBuffer;
+import com.stratux.stratuvare.gdl90.Decode;
 import com.stratux.stratuvare.gdl90.FisBuffer;
 import com.stratux.stratuvare.gdl90.HeartbeatMessage;
 import com.stratux.stratuvare.gdl90.Id413Product;
@@ -38,15 +40,12 @@ import com.stratux.stratuvare.gdl90.TrafficReportMessage;
 import com.stratux.stratuvare.gdl90.UplinkMessage;
 import com.stratux.stratuvare.nmea.Ownship;
 import com.stratux.stratuvare.nmea.RTMMessage;
-import com.stratux.stratuvare.storage.Preferences;
-//import com.stratux.stratuvare.utils.MetarFlightCategory;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.LinkedList;
-import java.util.Random;
 
 /**
  * @author zkhan
@@ -54,12 +53,12 @@ import java.util.Random;
 public class BufferProcessor
 {
 
-    com.stratux.stratuvare.gdl90.DataBuffer dbuffer =
-            new com.stratux.stratuvare.gdl90.DataBuffer(16384);
+    DataBuffer dbuffer =
+            new DataBuffer(16384);
     com.stratux.stratuvare.nmea.DataBuffer nbuffer =
             new com.stratux.stratuvare.nmea.DataBuffer(16384);
-    com.stratux.stratuvare.gdl90.Decode decode =
-            new com.stratux.stratuvare.gdl90.Decode();
+    Decode decode =
+            new Decode();
     com.stratux.stratuvare.nmea.Decode ndecode =
             new com.stratux.stratuvare.nmea.Decode();
     Ownship nmeaOwnship = new Ownship();
@@ -81,14 +80,14 @@ public class BufferProcessor
     public LinkedList<String> decode()
     {
 
-        LinkedList<String> objs = new LinkedList<String>();
+        LinkedList<String> objs = new LinkedList<>();
 
         byte[] buf;
 
         while (null != (buf = nbuffer.get())) {
             com.stratux.stratuvare.nmea.Message m = ndecode.decode(buf);
             if (m instanceof RTMMessage) {
-                 // Make a GPS location message from ADSB ownship message.
+                // Make a GPS location message from ADSB ownship message.
                 JSONObject object = new JSONObject();
                 RTMMessage tm = (RTMMessage) m;
                 try {
@@ -97,10 +96,10 @@ public class BufferProcessor
                     object.put("latitude", (double) tm.mLat);
                     object.put("speed", (double) (tm.mSpeed));
                     object.put("bearing", (double) tm.mDirection);
-                    object.put("altitude", (double) ((double) tm.mAltitude));
-                    object.put("callsign", (String) "");
-                    object.put("address", (int) tm.mIcaoAddress);
-                    object.put("time", (long) tm.getTime());
+                    object.put("altitude", ((double) tm.mAltitude));
+                    object.put("callsign", "");
+                    object.put("address", tm.mIcaoAddress);
+                    object.put("time", tm.getTime());
                 }
                 catch (JSONException e1) {
                     continue;
@@ -108,7 +107,6 @@ public class BufferProcessor
                 objs.add(object.toString());
 
             }
-
             else if (nmeaOwnship.addMessage(m)) {
 
                 /*
@@ -122,8 +120,8 @@ public class BufferProcessor
                     object.put("latitude", (double) om.mLat);
                     object.put("speed", (double) (om.mHorizontalVelocity));
                     object.put("bearing", (double) om.mDirection);
-                    object.put("altitude", (double) ((double) om.mAltitude));
-                    object.put("time", (long) om.getTime());
+                    object.put("altitude", ((double) om.mAltitude));
+                    object.put("time", om.getTime());
                 }
                 catch (JSONException e1) {
                     continue;
@@ -133,12 +131,12 @@ public class BufferProcessor
         }
 
         while (null != (buf = dbuffer.get())) {
-             // * Get packets, decode
+            // * Get packets, decode
             com.stratux.stratuvare.gdl90.Message m = decode.decode(buf);
             // * Post on UI thread.
             if (m instanceof TrafficReportMessage) {
 
-                 // * Make a GPS location message from ADSB ownship message.
+                // * Make a GPS location message from ADSB ownship message.
                 JSONObject object = new JSONObject();
                 TrafficReportMessage tm = (TrafficReportMessage) m;
                 try {
@@ -147,17 +145,16 @@ public class BufferProcessor
                     object.put("latitude", (double) tm.mLat);
                     object.put("speed", (double) (tm.mHorizVelocity));
                     object.put("bearing", (double) tm.mHeading);
-                    object.put("altitude", (double) ((double) tm.mAltitude));
-                    object.put("callsign", (String) tm.mCallSign);
-                    object.put("address", (int) tm.mIcaoAddress);
-                    object.put("time", (long) tm.getTime());
+                    object.put("altitude", ((double) tm.mAltitude));
+                    object.put("callsign", tm.mCallSign);
+                    object.put("address", tm.mIcaoAddress);
+                    object.put("time", tm.getTime());
                 }
                 catch (JSONException e1) {
                     continue;
                 }
                 objs.add(object.toString());
             }
-
             else if (m instanceof BasicReportMessage) {
 
                 // * Make a GPS location message from ADSB ownship message.
@@ -165,14 +162,14 @@ public class BufferProcessor
                 BasicReportMessage tm = (BasicReportMessage) m;
                 try {
                     object.put("type", "traffic");
-                    object.put("longitude", (double) tm.mLon);
-                    object.put("latitude", (double) tm.mLat);
+                    object.put("longitude", tm.mLon);
+                    object.put("latitude", tm.mLat);
                     object.put("speed", (double) (tm.mSpeed));
-                    object.put("bearing", (double) tm.mHeading);
-                    object.put("altitude", (double) ((double) tm.mAltitude));
-                    object.put("callsign", (String) tm.mCallSign);
-                    object.put("address", (int) tm.mIcaoAddress);
-                    object.put("time", (long) tm.getTime());
+                    object.put("bearing", tm.mHeading);
+                    object.put("altitude", ((double) tm.mAltitude));
+                    object.put("callsign", tm.mCallSign);
+                    object.put("address", tm.mIcaoAddress);
+                    object.put("time", tm.getTime());
                 }
                 catch (JSONException e1) {
                     continue;
@@ -180,47 +177,43 @@ public class BufferProcessor
 
                 objs.add(object.toString());
             }
-
             else if (m instanceof LongReportMessage) {
                 // Make a GPS location message from ADSB ownship message. xxxx
                 JSONObject object = new JSONObject();
                 LongReportMessage tm = (LongReportMessage) m;
                 try {
                     object.put("type", "traffic");
-                    object.put("longitude", (double) tm.mLon);
-                    object.put("latitude", (double) tm.mLat);
+                    object.put("longitude", tm.mLon);
+                    object.put("latitude", tm.mLat);
                     object.put("speed", (double) (tm.mSpeed));
-                    object.put("bearing", (double) tm.mHeading);
-                    object.put("altitude", (double) ((double) tm.mAltitude));
-                    object.put("callsign", (String) tm.mCallSign);
-                    object.put("address", (int) tm.mIcaoAddress);
-                    object.put("time", (long) tm.getTime());
-                }
-                catch (JSONException e1) {
+                    object.put("bearing", tm.mHeading);
+                    object.put("altitude", ((double) tm.mAltitude));
+                    object.put("callsign", tm.mCallSign);
+                    object.put("address", tm.mIcaoAddress);
+                    object.put("time", tm.getTime());
+                } catch (JSONException e1) {
                     continue;
                 }
                 objs.add(object.toString());
             }
-
             else if (m instanceof OwnshipGeometricAltitudeMessage) {
                 JSONObject object = new JSONObject();
                 try {
                     object.put("type", "geoaltitude");
 
-                    int altitude = (int) ((OwnshipGeometricAltitudeMessage) m).mAltitudeWGS84;
+                    int altitude = ((OwnshipGeometricAltitudeMessage) m).mAltitudeWGS84;
                     if (altitude == Integer.MIN_VALUE) {
                         // invalid
                         continue;
                     }
                     object.put("altitude", (double) altitude);
-                    object.put("time", (long) m.getTime());
+                    object.put("time", m.getTime());
                 }
                 catch (JSONException e1) {
                     continue;
                 }
                 objs.add(object.toString());
             }
-
             else if (m instanceof UplinkMessage) {
                 //
                 // Send an uplink nexrad message
@@ -246,8 +239,8 @@ public class BufferProcessor
 
                         int[] data = pn.getData();
                         if (null != data) {
-                            for (int i = 0; i < data.length; i++) {
-                                arrayData.put(data[i]);
+                            for (int aData : data) {
+                                arrayData.put(aData);
                             }
                         }
                         LinkedList<Integer> empty = pn.getEmpty();
@@ -259,7 +252,7 @@ public class BufferProcessor
 
                         try {
                             object.put("type", "nexrad");
-                            object.put("time", (long) pn.getTime().getTimeInMillis());
+                            object.put("time", pn.getTime().getTimeInMillis());
                             object.put("conus", pn.isConus());
                             object.put("blocknumber", (long) pn.getBlockNumber());
                             object.put("x", Constants.COLS_PER_BIN);
@@ -281,23 +274,23 @@ public class BufferProcessor
                         Id413Product pn = (Id413Product) p;
                         JSONObject object = new JSONObject();
 
-                        String data = pn.getData();
+                        StringBuilder data = new StringBuilder(pn.getData());
                         String type = pn.getHeader();
-                        long time = (long) pn.getTime().getTimeInMillis();
+                        long time = pn.getTime().getTimeInMillis();
 
                         /*
                          * Clear garbage spaces etc. Convert to Stratuvare format
                          */
 
                         try {
-
-                            //if(type.equals("METAR") || type.equals("SPECI")) {
-                            //    object.put("flight_category", MetarFlightCategory.getFlightCategory(pn.getLocation(), pn.getData()));
-                            //}
-
+/*
+                            if (type.equals("METAR") || type.equals("SPECI")) {
+                                object.put("flight_category", MetarFlightCategory.getFlightCategory(pn.getLocation(), pn.getData()));
+                            }
+*/
                             if (type.equals("WINDS")) {
 
-                                String tokens[] = data.split("\n");
+                                String tokens[] = data.toString().split("\n");
                                 if (tokens.length < 2) {
                                     // * Must have line like
                                     // * MSY 230000Z  FT 3000 6000    F9000   C12000  G18000  C24000  C30000  D34000  39000   Y
@@ -314,96 +307,96 @@ public class BufferProcessor
                                 /*
                                  * Start from 3rd entry - alts
                                  */
-                                data = "";
+                                data = new StringBuilder();
                                 boolean found = false;
                                 for (int i = 2; i < alts.length; i++) {
                                     if (alts[i].contains("3000") && !alts[i].contains("30000")) {
-                                        data += winds[i - 2] + ",";
+                                        data.append(winds[i - 2]).append(",");
                                         found = true;
                                     }
                                 }
                                 if (!found) {
-                                    data += ",";
+                                    data.append(",");
                                 }
                                 found = false;
                                 for (int i = 2; i < alts.length; i++) {
                                     if (alts[i].contains("6000")) {
-                                        data += winds[i - 2] + ",";
+                                        data.append(winds[i - 2]).append(",");
                                         found = true;
                                     }
                                 }
                                 if (!found) {
-                                    data += ",";
+                                    data.append(",");
                                 }
                                 found = false;
                                 for (int i = 2; i < alts.length; i++) {
                                     if (alts[i].contains("9000") && !alts[i].contains("39000")) {
-                                        data += winds[i - 2] + ",";
+                                        data.append(winds[i - 2]).append(",");
                                         found = true;
                                     }
                                 }
                                 if (!found) {
-                                    data += ",";
+                                    data.append(",");
                                 }
                                 found = false;
                                 for (int i = 2; i < alts.length; i++) {
                                     if (alts[i].contains("12000")) {
-                                        data += winds[i - 2] + ",";
+                                        data.append(winds[i - 2]).append(",");
                                         found = true;
                                     }
                                 }
                                 if (!found) {
-                                    data += ",";
+                                    data.append(",");
                                 }
                                 found = false;
                                 for (int i = 2; i < alts.length; i++) {
                                     if (alts[i].contains("18000")) {
-                                        data += winds[i - 2] + ",";
+                                        data.append(winds[i - 2]).append(",");
                                         found = true;
                                     }
                                 }
                                 if (!found) {
-                                    data += ",";
+                                    data.append(",");
                                 }
                                 found = false;
                                 for (int i = 2; i < alts.length; i++) {
                                     if (alts[i].contains("24000")) {
-                                        data += winds[i - 2] + ",";
+                                        data.append(winds[i - 2]).append(",");
                                         found = true;
                                     }
                                 }
                                 if (!found) {
-                                    data += ",";
+                                    data.append(",");
                                 }
                                 found = false;
                                 for (int i = 2; i < alts.length; i++) {
                                     if (alts[i].contains("30000")) {
-                                        data += winds[i - 2] + ",";
+                                        data.append(winds[i - 2]).append(",");
                                         found = true;
                                     }
                                 }
                                 if (!found) {
-                                    data += ",";
+                                    data.append(",");
                                 }
                                 found = false;
                                 for (int i = 2; i < alts.length; i++) {
                                     if (alts[i].contains("34000")) {
-                                        data += winds[i - 2] + ",";
+                                        data.append(winds[i - 2]).append(",");
                                         found = true;
                                     }
                                 }
                                 if (!found) {
-                                    data += ",";
+                                    data.append(",");
                                 }
                                 found = false;
                                 for (int i = 2; i < alts.length; i++) {
                                     if (alts[i].contains("39000")) {
-                                        data += winds[i - 2] + ",";
+                                        data.append(winds[i - 2]).append(",");
                                         found = true;
                                     }
                                 }
                                 if (!found) {
-                                    data += ",";
+                                    data.append(",");
                                 }
                             }
                         }
@@ -415,7 +408,7 @@ public class BufferProcessor
                             object.put("type", pn.getHeader());
                             object.put("time", time);
                             object.put("location", pn.getLocation());
-                            object.put("data", data);
+                            object.put("data", data.toString());
                             object.put("towerlon", lon);
                             object.put("towerlat", lat);
                             object.put("tisid", TISid);
@@ -440,7 +433,7 @@ public class BufferProcessor
                     object.put("latitude", (double) om.mLat);
                     object.put("speed", (double) (om.mHorizontalVelocity));
                     object.put("bearing", (double) om.mDirection);
-                    object.put("time", (long) om.getTime());
+                    object.put("time", om.getTime());
                     object.put("altitude", (double) om.mAltitude);
                 }
                 catch (JSONException e1) {
@@ -468,7 +461,7 @@ public class BufferProcessor
                     //object.put("minute", (double) om.mLat);
                     //object.put("second", (double) (om.mHorizontalVelocity));
 
-                    object.put("timestamp", (long) om.mTimeStamp);
+                    object.put("timestamp", om.mTimeStamp);
                     object.put("gpsvalid", (boolean) om.mGpsPositionValid);
                     object.put("lowbattery", (boolean) om.mBatteryLow);
                     object.put("running", (boolean) om.mDeviceRunning);

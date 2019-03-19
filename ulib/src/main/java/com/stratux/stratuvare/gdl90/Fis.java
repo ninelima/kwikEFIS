@@ -12,19 +12,16 @@ Redistribution and use in source and binary forms, with or without modification,
 package com.stratux.stratuvare.gdl90;
 
 /**
- * 
  * @author zkhan
- *
  */
 public class Fis {
 
+    int type;
+    byte mBuffer[];
     public Fis(int type, byte buffer[], int offset, int len) {
 
         mBuffer = new byte[len];
         System.arraycopy(buffer, offset, mBuffer, 0, len);
     }
-    
-    int type;
-    byte mBuffer[];
 
 }

@@ -31,7 +31,12 @@ import player.efis.common.prefs_t;
 //
 public class SurfaceView extends GLSurfaceView
 {
-    public final player.efis.Renderer mRenderer;  // normally this would be private but we want to access the sel wpt from main activity
+    private static final int MIN_DISTANCE = 150;
+    public final player.efis.Renderer mRenderer;
+    // normally this would be private but we want to access the sel wpt from main activity
+    //private final float TOUCH_SCALE_FACTOR = 180.0f / 320;
+    private float mPreviousX;
+    private float mPreviousY;
 
     public SurfaceView(Context context)
     {
@@ -48,11 +53,6 @@ public class SurfaceView extends GLSurfaceView
         setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
     }
 
-    //private final float TOUCH_SCALE_FACTOR = 180.0f / 320;
-    private float mPreviousX;
-    private float mPreviousY;
-    private static final int MIN_DISTANCE = 150;
-
     @Override
     public boolean onTouchEvent(MotionEvent e)
     {
@@ -64,7 +64,8 @@ public class SurfaceView extends GLSurfaceView
         float y = e.getY();
 
         switch (e.getAction()) {
-            /* We dont use movement messages, maybe later ...
+            // We don't use movement messages, maybe later ...
+/*
             case MotionEvent.ACTION_MOVE:
 
                 float dx = x - mPreviousX;
@@ -82,7 +83,7 @@ public class SurfaceView extends GLSurfaceView
 
                 requestRender();
                 break;
-            */
+*/
 
             case MotionEvent.ACTION_DOWN:
                 mRenderer.setActionDown(x, y);
@@ -97,7 +98,8 @@ public class SurfaceView extends GLSurfaceView
                 float deltaY = y - mPreviousY;
 
                 if (Math.abs(deltaY) > MIN_DISTANCE) {
-                    if (mRenderer.isAutoZoomActive()) Toast.makeText(getContext(), "Auto Zoom OFF", Toast.LENGTH_SHORT).show();
+                    if (mRenderer.isAutoZoomActive())
+                        Toast.makeText(getContext(), "Auto Zoom OFF", Toast.LENGTH_SHORT).show();
                     setAutoZoomActive(false);
                     if (deltaY < 0) {
                         // swipe up
@@ -109,7 +111,8 @@ public class SurfaceView extends GLSurfaceView
                     }
                 }
                 else if (Math.abs(deltaX) > MIN_DISTANCE) {
-                    if (!mRenderer.isAutoZoomActive()) Toast.makeText(getContext(), "Auto Zoom ON", Toast.LENGTH_SHORT).show();
+                    if (!mRenderer.isAutoZoomActive())
+                        Toast.makeText(getContext(), "Auto Zoom ON", Toast.LENGTH_SHORT).show();
                     setAutoZoomActive(true);
                     if (deltaY > 0) {
                         // swipe right
@@ -314,7 +317,7 @@ public class SurfaceView extends GLSurfaceView
     public void setTheme(int value)
     {
         if (value == 2) mRenderer.setThemeGreen();
-        else if (value == 1)  mRenderer.setThemeLight();
+        else if (value == 1) mRenderer.setThemeLight();
         else mRenderer.setThemeDark(); // the default
         requestRender();
     }
@@ -364,8 +367,4 @@ public class SurfaceView extends GLSurfaceView
         mRenderer.setAutoZoomActive(active);
         requestRender();
     }
-
-
-
-
 }

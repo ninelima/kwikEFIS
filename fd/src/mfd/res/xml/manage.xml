@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-<!--
-    <PreferenceCategory android:title="AIRCRAFT" >
+    <!--PreferenceCategory android:title="AIRCRAFT">
         <ListPreference
             android:defaultValue="0.75f"
             android:entries="@array/ac_list_names"
@@ -10,10 +9,9 @@
             android:key="AircraftModel"
             android:summary="Select active aircraft model"
             android:title="Aircraft" />
-    </PreferenceCategory>
-    -->
-    
-    <PreferenceCategory android:title="DATABASE" >
+    </PreferenceCategory-->
+
+    <PreferenceCategory android:title="DATABASE">
         <ListPreference
             android:defaultValue="RV8"
             android:entries="@array/ac_list_names"
@@ -26,9 +24,9 @@
     <PreferenceScreen
         android:defaultValue="true"
         android:key="displayAirspaceX"
+        android:persistent="false"
         android:summary="Select Airspace"
-        android:title="Airspace"
-        android:persistent="false">
+        android:title="Airspace">
         <CheckBoxPreference
             android:defaultValue="true"
             android:key="classA"
@@ -66,7 +64,7 @@
             android:title="CTR" />
     </PreferenceScreen>
 
-    <PreferenceCategory android:title="CONTROL" >
+    <PreferenceCategory android:title="CONTROL">
 
         <CheckBoxPreference
             android:defaultValue="false"
@@ -76,11 +74,11 @@
 
         <PreferenceScreen
             android:key="modeSelection"
-            android:title="System"
+            android:persistent="false"
             android:summary="Display and Operational settings"
-            android:persistent="false">
+            android:title="System">
 
-            <PreferenceCategory android:title="DISPLAY" >
+            <PreferenceCategory android:title="DISPLAY">
                 <CheckBoxPreference
                     android:defaultValue="false"
                     android:key="landscapeMode"
@@ -93,8 +91,8 @@
                     android:summary="Mirror image for HUD usage"
                     android:title="Mirror HUD" />
             </PreferenceCategory>
-                    
-            <PreferenceCategory android:title="ADMIN" >
+
+            <PreferenceCategory android:title="ADMIN">
                 <CheckBoxPreference
                     android:defaultValue="false"
                     android:key="simulatorActive"
@@ -105,26 +103,22 @@
                     android:key="lockedMode"
                     android:summary="Lock the exit on back button"
                     android:title="Locked" />
-            <PreferenceScreen
-                android:defaultValue="0.0"
-                android:key="version"
-                android:summary="0.0"
-                android:title="Version" />
+                <PreferenceScreen
+                    android:defaultValue="0.0"
+                    android:key="version"
+                    android:summary="0.0"
+                    android:title="Version" />
             </PreferenceCategory>
-            </PreferenceScreen>
+        </PreferenceScreen>
 
-        <!-- Moved to settings.xml     
-        <ListPreference
+        <!-- Moved to settings.xml -->
+        <!--ListPreference
             android:defaultValue="0"
             android:entries="@array/color_theme_names"
             android:entryValues="@array/color_theme_values"
             android:key="colorTheme"
             android:summary="Select color theme"
-            android:title="Theme" />
-            -->
-
-
+            android:title="Theme" /-->
 
     </PreferenceCategory>
 </PreferenceScreen>
-

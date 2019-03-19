@@ -16,13 +16,14 @@
 
 package player.ulib;
 
-public class Unit {
+public class Unit
+{
 
-    public static final float NM_M  = 1852f;
+    public static final float NM_M = 1852f;
     public static final float NM_KM = 1.852f;
     public static final float NM_FT = 6076.115f;
 
-    public static final float M_FT   = 3.28084f;
+    public static final float M_FT = 3.28084f;
     public static final float M_INCH = 39.37008f;
 
     //---------------------------------
@@ -61,7 +62,8 @@ public class Unit {
     }
 
     // Nautical Miles
-    public static class NauticalMile {
+    public static class NauticalMile
+    {
         // m
         public static float toMeter(float nm)
         {
@@ -113,8 +115,7 @@ public class Unit {
     }
 
     // Knots (Nautical Mile Per Hour)
-    public static class Knot
-    {
+    public static class Knot {
         public static float toMeterPerSecond(float kt)
         {
             return kt * 0.5144444f; // NM_M / 3600 = 1.0.5144444f
@@ -125,5 +126,4 @@ public class Unit {
             return kt * NM_KM;
         }
     }
-
 }

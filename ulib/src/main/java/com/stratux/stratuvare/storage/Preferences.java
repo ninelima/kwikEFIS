@@ -12,8 +12,6 @@ Redistribution and use in source and binary forms, with or without modification,
 
 package com.stratux.stratuvare.storage;
 
-
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
@@ -23,14 +21,12 @@ import android.preference.PreferenceManager;
  */
 public class Preferences {
 
-    
     /**
      * Preferences
      */
     private SharedPreferences mPref;
 
     /**
-     * 
      * @param ctx
      */
     public Preferences(Context ctx) {
@@ -42,7 +38,6 @@ public class Preferences {
 
 
     /**
-     * 
      * @return
      */
     public String getEditTextValue(int id) {
@@ -50,15 +45,13 @@ public class Preferences {
     }
 
     /**
-     * 
      * @param tags
      */
     public void setEditTextValue(int id, String val) {
-        mPref.edit().putString("EditText" + id, val).commit();
+        mPref.edit().putString("EditText" + id, val).apply();
     }
 
     /**
-     * 
      * @return
      */
     public boolean getCheckboxValue(int id) {
@@ -66,11 +59,9 @@ public class Preferences {
     }
 
     /**
-     * 
      * @param tags
      */
     public void setCheckboxValue(int id, boolean val) {
-        mPref.edit().putBoolean("Checkbox" + id, val).commit();
+        mPref.edit().putBoolean("Checkbox" + id, val).apply();
     }
-
 }

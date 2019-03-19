@@ -17,56 +17,55 @@ import android.widget.EditText;
 
 /**
  * Sticky edit text, value stored in Preferences
- * @author zkhan
  *
+ * @author zkhan
  */
 public class SavedEditText extends EditText {
 
-	Preferences mPref = null;
-	
-	/**
-	 * Get value from saved
-	 */
-	private void setup(Context ctx) {
-		
-		/*
-		 * Get value from stored prefs
-		 */
-		mPref = new Preferences(ctx);
-		String val  = mPref.getEditTextValue(getId());
-		if(val != null) {
-			setText(val);
-		}
-	}
-	
-	public SavedEditText(Context context) {
-		super(context);
-		setup(context);
-		// TODO Auto-generated constructor stub
-	}
+    Preferences mPref = null;
 
-	public SavedEditText(Context context, AttributeSet attrs) {
-		super(context, attrs);
-		// TODO Auto-generated constructor stub
-		setup(context);
-	}
+    public SavedEditText(Context context) {
+        super(context);
+        setup(context);
+        // TODO Auto-generated constructor stub
+    }
 
-	public SavedEditText(Context context, AttributeSet attrs, int defStyleAttr) {
-		super(context, attrs, defStyleAttr);
-		// TODO Auto-generated constructor stub
-		setup(context);
-	}
+    public SavedEditText(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        // TODO Auto-generated constructor stub
+        setup(context);
+    }
 
+    public SavedEditText(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+        // TODO Auto-generated constructor stub
+        setup(context);
+    }
 
-	/**
-	 * Override the text changed callback to save the text
-	 */
-	@Override
-	public void onTextChanged(CharSequence s, int start, int before, int count){
-		super.onTextChanged(s, start, before, count);
-		if(null != mPref) {
-			String val = getText().toString();
-			mPref.setEditTextValue(getId(), val);
-		}
-	} 
+    /**
+     * Get value from saved
+     */
+    private void setup(Context ctx) {
+
+        /*
+         * Get value from stored prefs
+         */
+        mPref = new Preferences(ctx);
+        String val = mPref.getEditTextValue(getId());
+        if (val != null) {
+            setText(val);
+        }
+    }
+
+    /**
+     * Override the text changed callback to save the text
+     */
+    @Override
+    public void onTextChanged(CharSequence s, int start, int before, int count) {
+        super.onTextChanged(s, start, before, count);
+        if (null != mPref) {
+            String val = getText().toString();
+            mPref.setEditTextValue(getId(), val);
+        }
+    }
 }

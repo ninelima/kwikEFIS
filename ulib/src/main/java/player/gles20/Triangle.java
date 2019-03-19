@@ -16,90 +16,61 @@
 
 package player.gles20;
 
+import android.opengl.GLES20;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
-
-import android.opengl.GLES20;
 
 /**
  * A two-dimensional triangle for use as a drawn object in OpenGL ES 2.0.
  */
 public class Triangle {
-	
-	// This matrix member variable provides a hook to manipulate
-	// the coordinates of the objects that use this vertex shader
 
-	// the matrix must be included as a modifier of gl_Position 
-	// Note that the uMVPMatrix factor *must be first* in order
-	// for the matrix multiplication product to be correct.
-    
-	private final String vertexShaderCode =
-			"uniform mat4 uMVPMatrix;" +
-			"attribute vec4 vPosition;" +
-			"void main() {" +  
-			"  gl_Position = uMVPMatrix * vPosition;" +
-			"}";
+    // This matrix member variable provides a hook to manipulate
+    // the coordinates of the objects that use this vertex shader
 
-    private final String fragmentShaderCode =
-            "precision mediump float;" +
-            "uniform vec4 vColor;" + 
-            "void main() {" +
-            "  gl_FragColor = vColor;" +
-            "}";
-
-    private final FloatBuffer mVertexBuffer;
-    private final int mProgram;
-    private int mPositionHandle;
-    private int mColorHandle;
-    private int mMVPMatrixHandle;
+    // the matrix must be included as a modifier of gl_Position
+    // Note that the uMVPMatrix factor *must be first* in order
+    // for the matrix multiplication product to be correct.
 
     // number of coordinates per vertex in this array
     static final int COORDS_PER_VERTEX = 3;
     static float triangleCoords[] = {
             // in counterclockwise order:
-            0.0f,  0.622008459f, 0.0f,   // top
-           -0.5f, -0.311004243f, 0.0f,   // bottom left
+            0.0f, 0.622008459f, 0.0f,   // top
+            -0.5f, -0.311004243f, 0.0f,   // bottom left
             0.5f, -0.311004243f, 0.0f    // bottom right
     };
+    private final String vertexShaderCode =
+            "uniform mat4 uMVPMatrix;" +
+                    "attribute vec4 vPosition;" +
+                    "void main() {" +
+                    "  gl_Position = uMVPMatrix * vPosition;" +
+                    "}";
+    private final String fragmentShaderCode =
+            "precision mediump float;" +
+                    "uniform vec4 vColor;" +
+                    "void main() {" +
+                    "  gl_FragColor = vColor;" +
+                    "}";
+    private final FloatBuffer mVertexBuffer;
+    private final int mProgram;
     private final int vertexCount = triangleCoords.length / COORDS_PER_VERTEX;
     private final int vertexStride = COORDS_PER_VERTEX * 4; // 4 bytes per vertex
-
-  	// Set color with red, green, blue and alpha (opacity) values
-    float color[] = { 0.63671875f, 0.76953125f, 0.22265625f, 0.0f };
-
-
-    /**
-     * Utility method for compiling a OpenGL shader.
-     * <p>
-     * <p><strong>Note:</strong> When developing shaders, use the checkGlError()
-     * method to debug shader coding errors.</p>
-     *
-     * @param type       - Vertex or fragment shader type.
-     * @param shaderCode - String containing the shader code.
-     * @return - Returns an id for the shader.
-     */
-    public static int loadShader(int type, String shaderCode)
-    {
-        // create a vertex shader type (GLES20.GL_VERTEX_SHADER)
-        // or a fragment shader type (GLES20.GL_FRAGMENT_SHADER)
-        int shader = GLES20.glCreateShader(type);
-
-        // add the source code to the shader and compile it
-        GLES20.glShaderSource(shader, shaderCode);
-        GLES20.glCompileShader(shader);
-
-        return shader;
-    }
+    // Set color with red, green, blue and alpha (opacity) values
+    float color[] = {0.63671875f, 0.76953125f, 0.22265625f, 0.0f};
+    private int mPositionHandle;
+    private int mColorHandle;
+    private int mMVPMatrixHandle;
 
 
     /**
      * Sets up the drawing object data for use in an OpenGL ES context.
      */
-    public Triangle() 
-    {
+    public Triangle() {
         // initialize vertex byte buffer for shape coordinates
-        ByteBuffer bb = ByteBuffer.allocateDirect( triangleCoords.length * 4); // (number of coordinate values * 4 bytes per float)
+        ByteBuffer bb = ByteBuffer.allocateDirect(triangleCoords.length * 4); // (number of coordinate values * 4 bytes per float)
         // use the device hardware's native byte order
         bb.order(ByteOrder.nativeOrder());
 
@@ -122,44 +93,62 @@ public class Triangle {
         GLES20.glLinkProgram(mProgram);                  // create OpenGL program executables
     }
 
-	public void SetVerts(float v0, float v1, float v2, float v3, float v4, float v5, float v6, float v7, float v8) 
-	{	triangleCoords[0] = v0;
-		triangleCoords[1] = v1;
-		triangleCoords[2] = v2;
-		triangleCoords[3] = v3;
-		triangleCoords[4] = v4;
-		triangleCoords[5] = v5;
-		triangleCoords[6] = v6;
-		triangleCoords[7] = v7;
-		triangleCoords[8] = v8;
+    /**
+     * Utility method for compiling a OpenGL shader.
+     * <p>
+     * <p><strong>Note:</strong> When developing shaders, use the checkGlError()
+     * method to debug shader coding errors.</p>
+     *
+     * @param type       - Vertex or fragment shader type.
+     * @param shaderCode - String containing the shader code.
+     * @return - Returns an id for the shader.
+     */
+    public static int loadShader(int type, String shaderCode) {
+        // create a vertex shader type (GLES20.GL_VERTEX_SHADER)
+        // or a fragment shader type (GLES20.GL_FRAGMENT_SHADER)
+        int shader = GLES20.glCreateShader(type);
 
-		mVertexBuffer.put(triangleCoords);
-		// set the buffer to read the first coordinate
-		mVertexBuffer.position(0);
-	}
+        // add the source code to the shader and compile it
+        GLES20.glShaderSource(shader, shaderCode);
+        GLES20.glCompileShader(shader);
 
-	public void SetColor(float red, float green, float blue, float alpha) 
-	{
-		color[0] = red; 
-		color[1] = green;
-		color[2] = blue;
-		color[3] = alpha;
-	}
-	
-	public void SetWidth(float width) 
-	{
-		//LineWidth = width;
-	}
-    
-        
+        return shader;
+    }
+
+    public void SetVerts(float v0, float v1, float v2, float v3, float v4, float v5, float v6, float v7, float v8) {
+        triangleCoords[0] = v0;
+        triangleCoords[1] = v1;
+        triangleCoords[2] = v2;
+        triangleCoords[3] = v3;
+        triangleCoords[4] = v4;
+        triangleCoords[5] = v5;
+        triangleCoords[6] = v6;
+        triangleCoords[7] = v7;
+        triangleCoords[8] = v8;
+
+        mVertexBuffer.put(triangleCoords);
+        // set the buffer to read the first coordinate
+        mVertexBuffer.position(0);
+    }
+
+    public void SetColor(float red, float green, float blue, float alpha) {
+        color[0] = red;
+        color[1] = green;
+        color[2] = blue;
+        color[3] = alpha;
+    }
+
+    public void SetWidth(float width) {
+        //LineWidth = width;
+    }
+
     /**
      * Encapsulates the OpenGL ES instructions for drawing this shape.
      *
      * @param mvpMatrix - The Model View Project matrix in which to draw
-     * this shape.
+     *                  this shape.
      */
-    public void draw(float[] mvpMatrix) 
-    {
+    public void draw(float[] mvpMatrix) {
         // Add program to OpenGL environment
         GLES20.glUseProgram(mProgram);
 
@@ -177,7 +166,7 @@ public class Triangle {
 
         // Set color for drawing the triangle
         GLES20.glUniform4fv(mColorHandle, 1, color, 0);
-    
+
         //GLES20.glLineWidth(LineWidth);
 
         // get handle to shape's transformation matrix

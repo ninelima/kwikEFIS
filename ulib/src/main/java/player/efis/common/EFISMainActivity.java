@@ -17,11 +17,6 @@
 
 package player.efis.common;
 
-import player.ulib.DigitalFilter;
-import player.ulib.UMath;
-import player.ulib.UTrig;
-import player.ulib.Unit;
-
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Intent;
@@ -35,8 +30,6 @@ import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.BatteryManager;
-
-// sensor imports
 import android.os.Bundle;
 import android.text.format.Time;
 import android.widget.Toast;
@@ -45,17 +38,50 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import player.ulib.DigitalFilter;
+import player.ulib.UTrig;
+import player.ulib.Unit;
 
 public class EFISMainActivity extends Activity //implements Listener, SensorEventListener, LocationListener
 {
 
+    protected static final long GPS_UPDATE_PERIOD = 0;   //ms // 400
+    protected static final long GPS_UPDATE_DISTANCE = 0; //ms // 1
+    private static final float STD_RATE = 0.0524f;       // = rate 1 = 3deg/s
+    //-------------------------------------------------------------------------
+    // Utility function to calculate rate of climb
+    // Rate of climb in m/s
+    protected static Time time = new Time();    // Time class
+    //-------------------------------------------------------------------------
+    // Utility function to determine the direction of the turn and try to eliminate
+    // the jitter around zero a little bit
+    // Determine the direction of the turn based on the rotation and try to eliminate the jitter around zero a little bit
+    // -1 for left turn
+    // +1 for right turn
+    //  0 for no turn
+    static int rs = 0;  // variable to keep the running count
+    private static long _time_a;
+    private static float _altitude;    // previous altitude
+    //-------------------------------------------------------------------------
+    // Utility function to calculate rate of turn
+    // Rate of turn in rad/s
+    private static float _course;    // previous course
+    private static long _time_c;
+    private static float _rateOfTurn;
+    //
+    // Stratux handler - not used anymore
+    //
+    protected final int STRATUX_OK = 0;
+    protected final int STRATUX_TASK = -1;
+    protected final int STRATUX_DEVICE = -2;
+    protected final int STRATUX_GPS = -3;
+    protected final int STRATUX_WIFI = -4;
+    protected final int STRATUX_SERVICE = -5;
     protected MediaPlayer mpCautionTraffic;
-    protected MediaPlayer mpCautionTerrian;
+    protected MediaPlayer mpCautionTerrain;
     protected MediaPlayer mpFiveHundred;
     protected MediaPlayer mpSinkRate;
     protected MediaPlayer mpStall;
-
-
     protected SensorComplementaryFilter sensorComplementaryFilter;
     // location members
     protected LocationManager locationManager;
@@ -67,11 +93,6 @@ public class EFISMainActivity extends Activity //implements Listener, SensorEven
     protected boolean bHudMode = false;
     protected boolean bLandscapeMode = false;
     protected int colorTheme; // 0=Normal, 1=High Contrast, 2=Monochrome
-
-    private static final float STD_RATE = 0.0524f;       // = rate 1 = 3deg/s
-    protected static final long GPS_UPDATE_PERIOD = 0;   //ms // 400
-    protected static final long GPS_UPDATE_DISTANCE = 0; //ms // 1
-
     // Location abstracts
     //_gps_lat = -33.98f;  _gps_lon =   18.82f; // Stellenbosh
     protected float gps_lat;// = -34f;            // in decimal degrees
@@ -90,9 +111,13 @@ public class EFISMainActivity extends Activity //implements Listener, SensorEven
     protected int gps_insky;
     protected int gps_infix;
     protected float sensorBias;           // gyroscope / GPS bias
+
+    /*private MediaPlayer mpCautionTerrain;
+    private MediaPlayer mpFiveHundred;
+    private MediaPlayer mpSinkRate;
+    private MediaPlayer mpStall;*/
     protected Gpx mGpx;                   // wpt database
     protected DemGTOPO30 mDemGTOPO30;     // dem database
-
     // Digital filters
     protected DigitalFilter filterRateOfTurnGyro = new DigitalFilter(16); //8
     protected DigitalFilter filterSlip = new DigitalFilter(32);           //32
@@ -105,20 +130,36 @@ public class EFISMainActivity extends Activity //implements Listener, SensorEven
     protected DigitalFilter filterGpsSpeed = new DigitalFilter(6);        //4
     protected DigitalFilter filterGpsAltitude = new DigitalFilter(6);     //4
     protected DigitalFilter filterGpsCourse = new DigitalFilter(8);       //4
-
-    /*private MediaPlayer mpCautionTerrian;
-    private MediaPlayer mpFiveHundred;
-    private MediaPlayer mpSinkRate;
-    private MediaPlayer mpStall;*/
-
     // Stratux Wifi
     protected WifiManager wifiManager;
     protected StratuxWiFiTask mStratux;
     protected long PrevStratuxTimeStamp;// = Long.MAX_VALUE;
+    //-------------------------------------------------------------------------
+    // Utility function to do a simple simulation for demo mode
+    // It acts like a crude flight simulator
+    //
+    protected float _gps_lat = 00.00f;
+    protected float _gps_lon = 00.00f;   // null island
+    protected float _gps_agl = 0; // meters
+    protected long sim_ms;
+    //for landscape mode
+    // private float azimuthValue;
+    protected float rollValue;
+    protected float pitchValue;
+    protected float gyro_rateOfTurn;
+    protected float loadfactor;
+    protected float slipValue;
+    protected int ctr = 0;
+    float _gps_course = 0.96f;    // in radians
+    float _gps_altitude = 3000;   // meters
+    float _gps_speed = 0;         // m/s
+    long _sim_ms = 0;
+    Random sim_rand = new Random();
+    boolean sim_primed = false;
+    // Create a Timer
+    Timer timer = new Timer();
 
-
-    protected void setGpsStatus()
-    {
+    protected void setGpsStatus() {
         gps_insky = 0;
         gps_infix = 0;
         if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
@@ -131,19 +172,14 @@ public class EFISMainActivity extends Activity //implements Listener, SensorEven
         }
     }
 
-
-    
-    protected void killProcess(String process)
-    {
+    protected void killProcess(String process) {
         // Required the following permission:
         // <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
         ActivityManager am = (ActivityManager) getSystemService(Activity.ACTIVITY_SERVICE);
         am.killBackgroundProcesses(process);
     }
-    
 
-    protected boolean connectWiFi(String ssid)
-    {
+    protected boolean connectWiFi(String ssid) {
         // Connect to wifi
         Toast.makeText(this, "Stratux: Connecting ...", Toast.LENGTH_SHORT).show();
         WifiConfiguration wifiConfig = new WifiConfiguration();
@@ -161,40 +197,22 @@ public class EFISMainActivity extends Activity //implements Listener, SensorEven
         if (checkWiFiStatus(ssid)) {
             Toast.makeText(this, "Stratux: Connected", Toast.LENGTH_SHORT).show();
             return true;
-        }
-        else
+        } else
             return false;
     }
 
-    protected boolean checkWiFiStatus(String ssid)
-    {
+    protected boolean checkWiFiStatus(String ssid) {
         try {
             WifiInfo info = wifiManager.getConnectionInfo();
-            if ((info.getSupplicantState() == SupplicantState.COMPLETED)
-                    && (info.getSSID().contains(ssid)))
-                return true;
-            else
-                return false;
-        }
-        catch (Exception e) {
+            return (info.getSupplicantState() == SupplicantState.COMPLETED)
+                    && (info.getSSID().contains(ssid));
+        } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
     }
 
-    //
-    // Stratux handler - not used anymore
-    //
-    protected final int STRATUX_OK = 0;
-    protected final int STRATUX_TASK = -1;
-    protected final int STRATUX_DEVICE = -2;
-    protected final int STRATUX_GPS = -3;
-    protected final int STRATUX_WIFI = -4;
-    protected final int STRATUX_SERVICE = -5;
-
-
-    protected int handleStratux()
-    {
+    protected int handleStratux() {
         if (bSimulatorActive) return STRATUX_OK;
 
         if (checkWiFiStatus("stratux")) {
@@ -233,16 +251,13 @@ public class EFISMainActivity extends Activity //implements Listener, SensorEven
                 if (gps_speed > 5) {
                     hasSpeed = true;
                     gps_course = (float) Math.toRadians(mStratux.GPSTrueCourse);
-                }
-                else hasSpeed = false;
+                } else hasSpeed = false;
                 return STRATUX_OK;
-            }
-            else {
+            } else {
                 return STRATUX_GPS;
             }
-        }
-        else {
-            if (ctr % 100 == 0 ) {
+        } else {
+            if (ctr % 100 == 0) {
                 hasGps = false;
                 hasSpeed = false;
                 connectWiFi("stratux");  // force the connection to stratux
@@ -251,18 +266,7 @@ public class EFISMainActivity extends Activity //implements Listener, SensorEven
         }
     }
 
-
-    //-------------------------------------------------------------------------
-    // Utility function to determine the direction of the turn and try to eliminate
-    // the jitter around zero a little bit
-    // Determine the direction of the turn based on the rotation and try to eliminate the jitter around zero a little bit
-    // -1 for left turn
-    // +1 for right turn
-    //  0 for no turn
-    static int rs = 0;  // variable to keep the running count
-
-    private int getTurnDirection(float rotValue)
-    {
+    private int getTurnDirection(float rotValue) {
         if (Math.signum(rotValue) > 0) rs++;
         else rs--;
 
@@ -271,47 +275,29 @@ public class EFISMainActivity extends Activity //implements Listener, SensorEven
         if (rs > JITTER_COUNT) {
             rs = JITTER_COUNT;
             return 1;
-        }
-        else if (rs < -JITTER_COUNT) {
+        } else if (rs < -JITTER_COUNT) {
             rs = -JITTER_COUNT;
             return -1;
-        }
-        else return 0;
+        } else return 0;
     }
 
-    //-------------------------------------------------------------------------
-    // Utility function to calculate rate of climb
-    // Rate of climb in m/s
-    protected static Time time = new Time();    // Time class
-    private static long time_a, _time_a;
-    private static float _altitude;    // previous altitude
-
-    protected float calculateRateOfClimb(float altitude)
-    {
+    protected float calculateRateOfClimb(float altitude) {
         float rateOfClimb = 0;
         long deltaT;
         float deltaAlt = altitude - _altitude;
 
         time.setToNow();
-        time_a = time.toMillis(true);
+        long time_a = time.toMillis(true);
         deltaT = time_a - _time_a;
         if (deltaT > 0) {
-            rateOfClimb = 1000 * filterRateOfClimb.runningAverage((float) deltaAlt / (float) deltaT); // m/s
+            rateOfClimb = 1000 * filterRateOfClimb.runningAverage(deltaAlt / (float) deltaT); // m/s
             _time_a = time_a;
             _altitude = altitude; // save the previous altitude
         }
         return rateOfClimb;
     }
 
-    //-------------------------------------------------------------------------
-    // Utility function to calculate rate of turn
-    // Rate of turn in rad/s
-    private static float _course;    // previous course
-    private static long time_c, _time_c;
-    private static float _rateOfTurn;
-
-    protected float calculateRateOfTurn(float course)
-    {
+    protected float calculateRateOfTurn(float course) {
         float rateOfTurn = 0;
         long deltaT;
         float deltaCrs = course - _course;
@@ -323,13 +309,12 @@ public class EFISMainActivity extends Activity //implements Listener, SensorEven
         }
 
         time.setToNow();
-        time_c = time.toMillis(true);
+        long time_c = time.toMillis(true);
         deltaT = time_c - _time_c;
         if (deltaT > 0) {
-            rateOfTurn = 1000 * (float) (deltaCrs) / deltaT; // rad/s
+            rateOfTurn = 1000 * deltaCrs / deltaT; // rad/s
             _time_c = time_c; // save the previous time
-        }
-        else {
+        } else {
             rateOfTurn = _rateOfTurn;
         }
 
@@ -341,16 +326,14 @@ public class EFISMainActivity extends Activity //implements Listener, SensorEven
     //-------------------------------------------------------------------------
     // Utility function to calculate the remaining
     // battery in percentage.
-    protected float getRemainingBattery()
-    {
+    protected float getRemainingBattery() {
         // Get the battery percentage
         IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         Intent batteryStatus = this.registerReceiver(null, ifilter);
         int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
         int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-        float batteryPct = level / (float) scale;
 
-        return batteryPct;
+        return level / (float) scale;
     }
 
     //-------------------------------------------------------------------------
@@ -359,10 +342,8 @@ public class EFISMainActivity extends Activity //implements Listener, SensorEven
     // We assume no GPS is available if there has not been a valid
     // altitude update in 10 seconds
     //
-    protected boolean isGPSAvailable()
-    {
-        if (gps_infix > 3) return true;
-        else return false;
+    protected boolean isGPSAvailable() {
+        return gps_infix > 3;
     }
 
     //-------------------------------------------------------------------------
@@ -370,8 +351,7 @@ public class EFISMainActivity extends Activity //implements Listener, SensorEven
     //
     // It is pretty brutal should save the persistent data first via onStop
     //
-    private void restartEFISApp()
-    {
+    private void restartEFISApp() {
         onStop();
 
         Intent i = getBaseContext().getPackageManager().getLaunchIntentForPackage(getBaseContext().getPackageName());
@@ -379,24 +359,7 @@ public class EFISMainActivity extends Activity //implements Listener, SensorEven
         startActivity(i);
     }
 
-    //-------------------------------------------------------------------------
-    // Utility function to do a simple simulation for demo mode
-    // It acts like a crude flight simulator
-    //
-    protected float _gps_lat = 00.00f;
-    protected float _gps_lon = 00.00f;   // null island
-    float _gps_course = 0.96f;    // in radians
-    float _gps_altitude = 3000;   // meters
-    protected float _gps_agl = 0; // meters
-
-    float _gps_speed = 0;         // m/s
-    protected long sim_ms;
-    long _sim_ms = 0;
-    Random sim_rand = new Random();
-    boolean sim_primed = false;
-
-    protected void Simulate()
-    {
+    protected void Simulate() {
         //pitchValue = -sensorComplementaryFilter.getPitch();
         //rollValue = -sensorComplementaryFilter.getRoll();
 
@@ -409,8 +372,7 @@ public class EFISMainActivity extends Activity //implements Listener, SensorEven
             _gps_speed -= 0.01f * pitchValue;
             if (_gps_speed > setSpeed) _gps_speed = setSpeed;
             if (_gps_speed < -setSpeed) _gps_speed = -setSpeed;
-        }
-        else {
+        } else {
             _gps_speed *= 0.99998;  // decay to zero
         }
         gps_speed = setSpeed + _gps_speed;
@@ -488,47 +450,27 @@ public class EFISMainActivity extends Activity //implements Listener, SensorEven
         gps_agl = DemGTOPO30.calculateAgl(gps_lat, gps_lon, gps_altitude);
     }
 
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
-    //for landscape mode
-    // private float azimuthValue;
-    protected float rollValue;
-    protected float pitchValue;
-    protected float gyro_rateOfTurn;
-    protected float loadfactor;
-    protected float slipValue;
-    protected int ctr = 0;
+        final int FPS = 40;
+        TimerTask updateStratux = new UpdateStratuxTask();
+        timer.scheduleAtFixedRate(updateStratux, 0, 1000 / FPS);
+    }
+    //And then add the new task to the Timer with some update interval
 
-    // Create a Timer
-    Timer timer = new Timer();
     //Then you extend the timer task
-    class UpdateStartuxTask extends TimerTask
-    {
+    class UpdateStratuxTask extends TimerTask {
         public void run() {
             //calculate the new position of myBall
             //handleStratux();
         }
     }
-    //And then add the new task to the Timer with some update interval
-
-    @Override
-    public void onCreate(Bundle savedInstanceState)
-    {
-        super.onCreate(savedInstanceState);
-
-        final int FPS = 40;
-        TimerTask updateStartux = new UpdateStartuxTask();
-        timer.scheduleAtFixedRate(updateStartux, 0, 1000 / FPS);
-    }
 }
-
-
-
-
 /*
 new AlertDialog.Builder(this)
-                    .setMessage("Hello world!")
-                    .setPositiveButton("OK", null)
-                    .show();
+        .setMessage("Hello world!")
+        .setPositiveButton("OK",null)
+        .show();
 */
-
-

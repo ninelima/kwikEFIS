@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <PreferenceCategory android:title="DISPLAY" style="?android:attr/listSeparatorTextViewStyle">
+    <PreferenceCategory
+        style="?android:attr/listSeparatorTextViewStyle"
+        android:title="DISPLAY">
         <ListPreference
             android:defaultValue="0"
             android:entries="@array/color_theme_names"
@@ -35,7 +37,7 @@
             android:title="Details" />
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="NAVIGATION" >
+    <PreferenceCategory android:title="NAVIGATION">
         <CheckBoxPreference
             android:defaultValue="true"
             android:key="displayFlightDirector"
@@ -51,5 +53,5 @@
             android:key="displayHITS"
             android:summary="Enable HITS display"
             android:title="Highway In The Sky" />
-        </PreferenceCategory>
+    </PreferenceCategory>
 </PreferenceScreen>

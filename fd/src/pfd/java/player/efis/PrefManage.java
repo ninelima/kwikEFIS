@@ -16,15 +16,12 @@
 
 package player.efis;
 
-import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceScreen;
-import android.view.View;
-import android.widget.ListView;
 
 public class PrefManage extends PreferenceActivity
 {
@@ -53,7 +50,7 @@ public class PrefManage extends PreferenceActivity
         lp.setSummary(lp.getEntry());
 
         // Get the version number of the app
-        PackageInfo pInfo = null;
+        PackageInfo pInfo;
         try {
             pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
         }
@@ -69,5 +66,3 @@ public class PrefManage extends PreferenceActivity
         ps.setSummary(version);
     }
 }
-
-

@@ -12,9 +12,7 @@ Redistribution and use in source and binary forms, with or without modification,
 package com.stratux.stratuvare.gdl90;
 
 /**
- * 
  * @author zkhan
- *
  */
 public class ProductType {
 
@@ -26,5 +24,4 @@ public class ProductType {
     public static final int PRODUCT_TYPE_SUA = 13;
     public static final int PRODUCT_TYPE_NEXRAD = 63; /* Also 64 */
     public static final int PRODUCT_TYPE_TEXT = 413;
-
 }

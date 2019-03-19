@@ -2,23 +2,23 @@ package player.gles20;
 
 
 public enum AttribVariable {
-	A_Position(1, "a_Position"), 
-	A_TexCoordinate(2, "a_TexCoordinate"), 
-	A_MVPMatrixIndex(3, "a_MVPMatrixIndex");
-	
-	private int mHandle;
-	private String mName;
+    A_Position(1, "a_Position"),
+    A_TexCoordinate(2, "a_TexCoordinate"),
+    A_MVPMatrixIndex(3, "a_MVPMatrixIndex");
 
-	private AttribVariable(int handle, String name) {
-		mHandle = handle;
-		mName = name;
-	}
+    private int mHandle;
+    private String mName;
 
-	public int getHandle() {
-		return mHandle;
-	}
-	
-	public String getName() {
-		return mName;
-	}
+    AttribVariable(int handle, String name) {
+        mHandle = handle;
+        mName = name;
+    }
+
+    public int getHandle() {
+        return mHandle;
+    }
+
+    public String getName() {
+        return mName;
+    }
 }

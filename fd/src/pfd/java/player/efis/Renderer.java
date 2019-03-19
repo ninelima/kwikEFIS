@@ -16,29 +16,30 @@
 
 package player.efis;
 
-import player.efis.common.DemColor;
-import player.efis.common.DemGTOPO30;
-import player.efis.common.AircraftData;
-import player.efis.common.EFISRenderer;
-import player.efis.common.Point;
-import player.gles20.Line;
-import player.gles20.PolyLine;
-import player.gles20.Polygon;
-import player.gles20.Square;
-import player.gles20.Triangle;
-import player.ulib.*;
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.opengles.GL10;
-import player.gles20.GLText;
 import android.content.Context;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.opengles.GL10;
+
+import player.efis.common.AircraftData;
+import player.efis.common.DemColor;
+import player.efis.common.DemGTOPO30;
+import player.efis.common.EFISRenderer;
+import player.efis.common.Point;
+import player.gles20.GLText;
+import player.gles20.Line;
+import player.gles20.PolyLine;
+import player.gles20.Polygon;
+import player.gles20.Square;
+import player.gles20.Triangle;
+
 public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
 {
     private static final String TAG = "Renderer";
-    protected boolean ServiceableAh;      // Flag to indicate AH failure
+    protected boolean ServiceableAh; // Flag to indicate AH failure
 
     public Renderer(Context context)
     {
@@ -69,10 +70,12 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 
         // Set the camera position (View matrix)
-        if (displayMirror)
-            Matrix.setLookAtM(mViewMatrix, 0, 0, 0, -3, 0f, 0f, 0f, 0f, 1.0f, 0.0f);  // Mirrored View
-        else
-            Matrix.setLookAtM(mViewMatrix, 0, 0, 0, +3, 0f, 0f, 0f, 0f, 1.0f, 0.0f);   // Normal View
+        if (displayMirror) {
+            Matrix.setLookAtM(mViewMatrix, 0, 0, 0, -3, 0f, 0f, 0f, 0f, 1.0f, 0.0f); // Mirrored View
+        }
+        else {
+            Matrix.setLookAtM(mViewMatrix, 0, 0, 0, +3, 0f, 0f, 0f, 0f, 1.0f, 0.0f); // Normal View
+        }
 
         // Calculate the projection and view transformation
         Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mViewMatrix, 0);
@@ -111,17 +114,20 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
             // Make the blue sky for the DEM.
             // Note: it extends a little below the horizon when AGL is positive
             renderDEMSky(scratch1);
-            if ((AGLValue > 0) && (DemGTOPO30.demDataValid))
+            if ((AGLValue > 0) && (DemGTOPO30.demDataValid)) {
                 renderDEMTerrain(scratch1);  // underground is not valid
+            }
         }
-        else if (displayAHColors) renderAHColors(scratch1);
+        else if (displayAHColors) {
+            renderAHColors(scratch1);
+        }
 
         renderPitchMarkers(scratch1);
 
         // FPV only means anything if we have speed and rate of climb, ie altitude
         if (displayFPV) renderFPV(scratch1);      // must be on the same matrix as the Pitch
         if (displayAirport) renderAPT(scratch1);  // must be on the same matrix as the Pitch
-        if (true) renderTargets(scratch1);        // TODO: 2018-08-31 Add control tof targets
+        renderTargets(scratch1);        // TODO: 2018-08-31 Add control tof targets
         if (displayHITS) renderHITS(scratch1);    // will not keep in the viewport
 
         // Flight Director - FD
@@ -143,7 +149,7 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
             renderFlightDirector(fdMatrix);
         }
 
-        // Remote Magnetic Inidicator - RMI
+        // Remote Magnetic Indicator - RMI
         if (displayRMI) {
             float xlx;
             float xly;
@@ -181,16 +187,18 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
         if (Layout == layout_t.PORTRAIT) {
             // Slide pitch to current value adj for portrait
             int Adjust = (int) (pixH2 * portraitOffset);
-            GLES20.glViewport(0,  Adjust, pixW, pixH); // Portrait //
+            GLES20.glViewport(0, Adjust, pixW, pixH); // Portrait //
         }
         renderFixedHorizonMarkers();
         renderRollMarkers(scratch2);
 
         //-----------------------------
-        if (Layout == layout_t.LANDSCAPE)
+        if (Layout == layout_t.LANDSCAPE) {
             GLES20.glViewport(pixW / 30, pixH / 30, pixW - pixW / 15, pixH - pixH / 15); //Landscape
-        else
+        }
+        else {
             GLES20.glViewport(pixW / 100, pixH * 40 / 100, pixW - pixW / 50, pixH - pixH * 42 / 100); // Portrait
+        }
 
         if (displayTape) {
             renderALTMarkers(altMatrix);
@@ -274,7 +282,8 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
 
         // this projection matrix is applied to  object coordinates in the onDrawFrame() method
         //b2 Matrix.frustumM(mProjectionMatrix, 0, -ratio, ratio, -1, 1, 3, 7);
-        //Matrix.frustumM(mProjMatrix, 0, -ratio, ratio, -1, 1, 2, 7); // - this apparently fixed for the Samsung S2?
+        //Matrix.frustumM(mProjMatrix, 0, -ratio, ratio, -1, 1, 2, 7);
+        // - this apparently fixed for the Samsung S2?
 
         //b2 start
         // Capture the window scaling for use by the rendering functions
@@ -286,7 +295,7 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
         if (pixW < pixH) pixM = pixW;
         else pixM = pixH;
 
-        // because the ascpect ratio is different in landscape and portrait (due to menu bar)
+        // because the aspect ratio is different in landscape and portrait (due to menu bar)
         // we just fudge it as 85% throughout,  looks OK in landscape as well
         pixM = pixM * 88 / 100;
         pixM2 = pixM / 2;
@@ -338,11 +347,10 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
         float pixPerDegree = pixM / pitchInView;
         // note: we do not take apt elevation into account
         return new Point(
-            (float) (+pixPerDegree * relbrg),
-            (float) (-pixPerDegree * Math.toDegrees(Math.atan2(MSLValue, Unit.NauticalMile.toFeet(dme))))
+                (float) (+pixPerDegree * relbrg),
+                (float) (-pixPerDegree * Math.toDegrees(Math.atan2(MSLValue, Unit.NauticalMile.toFeet(dme))))
         );
     }
-
 
     @Override
     protected Point project(float relbrg, float dme, float elev)
@@ -354,12 +362,9 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
 
         //float dme_ft = dme * 6080;
         //float y = (float) (-Math.toDegrees(UTrig.fastArcTan2(MSLValue - elev * 3.28084f, dme_ft)) * pixPerDegree);
-        float y =  (float) (-pixPerDegree * Math.toDegrees(Math.atan2(MSLValue - Unit.Meter.toFeet(elev), Unit.NauticalMile.toFeet(dme))));
+        float y = (float) (-pixPerDegree * Math.toDegrees(Math.atan2(MSLValue - Unit.Meter.toFeet(elev), Unit.NauticalMile.toFeet(dme))));
 
-        return new Point(
-                (float) (+pixPerDegree * relbrg),
-                (float) y
-        );
+        return new Point((float) (+pixPerDegree * relbrg), (float) y);
     }
 
     //-------------------------------------------------------------------------
@@ -511,10 +516,14 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
                 caution = cautionMin + (color.red + color.green + color.blue);
                 agl_ft = MSLValue - zav * 3.28084f;  // in ft
 
-                if (agl_ft > 1000) mTriangle.SetColor(color.red, color.green, color.blue, 1);                     // Enroute
-                else if (IASValue < IASValueThreshold) mTriangle.SetColor(color.red, color.green, color.blue, 1); // Taxi or approach
-                else if (agl_ft > 200) mTriangle.SetColor(caution, caution, 0, 1f);                               // Proximity notification (yellow)
-                else mTriangle.SetColor(caution, 0, 0, 1f);                                                       // Proximity warning (red)
+                if (agl_ft > 1000)
+                    mTriangle.SetColor(color.red, color.green, color.blue, 1); // Enroute
+                else if (IASValue < IASValueThreshold)
+                    mTriangle.SetColor(color.red, color.green, color.blue, 1); // Taxi or approach
+                else if (agl_ft > 200)
+                    mTriangle.SetColor(caution, caution, 0, 1f); // Proximity notification (yellow)
+                else
+                    mTriangle.SetColor(caution, 0, 0, 1f);                                                       // Proximity warning (red)
 
                 mTriangle.SetVerts(
                         x1, y1, z,
@@ -535,10 +544,14 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
                 caution = cautionMin + (color.red + color.green + color.blue);
                 agl_ft = MSLValue - zav * 3.28084f;  // in ft
 
-                if (agl_ft > 1000) mTriangle.SetColor(color.red, color.green, color.blue, 1);                     // Enroute
-                else if (IASValue < IASValueThreshold) mTriangle.SetColor(color.red, color.green, color.blue, 1); // Taxi or  approach
-                else if (agl_ft > 200) mTriangle.SetColor(caution, caution, 0, 1f);  // Proximity notification
-                else mTriangle.SetColor(caution, 0, 0, 1f);                          // Proximity warning
+                if (agl_ft > 1000)
+                    mTriangle.SetColor(color.red, color.green, color.blue, 1); // Enroute
+                else if (IASValue < IASValueThreshold)
+                    mTriangle.SetColor(color.red, color.green, color.blue, 1); // Taxi or  approach
+                else if (agl_ft > 200)
+                    mTriangle.SetColor(caution, caution, 0, 1f);  // Proximity notification
+                else
+                    mTriangle.SetColor(caution, 0, 0, 1f); // Proximity warning
 
                 mTriangle.SetVerts(
                         x2, y2, z,
@@ -546,7 +559,6 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
                         x4, y4, z);
                 mTriangle.draw(matrix);
 
-                /*
                 //
                 //  69%
                 //
@@ -557,25 +569,25 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
                 //    |  |
                 //    +--+
                 //   1    2
+/*
+                zav = z1;  // use the
+                getColor((short) zav);
+                agl_ft = MSLValue - zav * 3.28084f;  // in ft
 
-                    zav = z1;  // use the
-                    getColor((short) zav);
-                    agl_ft = MSLValue - zav*3.28084f;  // in ft
+                if (agl_ft > 100) mSquare.SetColor(red, green, blue, 1); // Enroute
+                else if (IASValue < IASValueThreshold) mTriangle.SetColor(red, green, blue, 1);
+                    // Taxi or approach
+                else mSquare.SetColor(caution, 0, 0, 1f); // Proximity warning
 
-                    if (agl_ft > 100) mSquare.SetColor(red, green, blue, 1);                      // Enroute
-                    else if (IASValue < IASValueThreshold) mTriangle.SetColor(red, green, blue, 1); // Taxi or  apporach
-                    else mSquare.SetColor(caution, 0, 0, 1f);                                     // Proximity warning
-
-                    float[] squarePoly = {
-                            x1, y1, z,
-                            x2, y2, z,
-                            x3, y3, z,
-                            x4, y4, z
-                    };
-                    mSquare.SetVerts(squarePoly);
-                    mSquare.draw(matrix);
-                */
-
+                float[] squarePoly = {
+                        x1, y1, z,
+                        x2, y2, z,
+                        x3, y3, z,
+                        x4, y4, z
+                };
+                mSquare.SetVerts(squarePoly);
+                mSquare.draw(matrix);
+*/
             }
         }
     }
@@ -588,9 +600,8 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
         // Maybe later
     }
 
-
     //---------------------------------------------------------------------------
-    // EFIS serviceability ... aka the Red X's
+    // EFIS serviceability... aka the Red X's
     //
 
     // Artificial Horizon serviceability
@@ -603,5 +614,4 @@ public class Renderer extends EFISRenderer implements GLSurfaceView.Renderer
     {
         ServiceableAh = false;
     }
-
 }

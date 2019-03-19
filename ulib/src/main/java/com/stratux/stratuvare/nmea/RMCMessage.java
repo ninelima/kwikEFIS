@@ -14,31 +14,28 @@ package com.stratux.stratuvare.nmea;
 import com.stratux.stratuvare.utils.Logger;
 
 /**
- * 
  * @author zkhan
- *
  */
 public class RMCMessage extends Message {
 
     float mLat;
     float mLon;
-    
-    int     mHorizontalVelocity;
-    int     mDirection;
 
-    
+    int mHorizontalVelocity;
+    int mDirection;
+
+
     public RMCMessage() {
         super(MessageType.RecommendedMinimumSentence);
     }
 
     /**
-     * 
      * @param msg
      */
     public void parse(String msg) {
         String tokens[] = msg.split(",");
-        
-        if(tokens.length < 10) {
+
+        if (tokens.length < 10) {
             return;
         }
         /*
@@ -51,29 +48,27 @@ public class RMCMessage extends Message {
         double tmp1;
         try {
             tmp = Double.parseDouble(tokens[3]);
-            tmp1 = (double)((int)tmp / (int)100);
-            mLat = (float)(tmp - (tmp1 * 100.0)) / 60.f + (float)tmp1;
-            if(tokens[4].equals("S")) {
+            tmp1 = (double) ((int) tmp / 100);
+            mLat = (float) (tmp - (tmp1 * 100.0)) / 60.f + (float) tmp1;
+            if (tokens[4].equals("S")) {
                 mLat = -mLat;
             }
             tmp = Double.parseDouble(tokens[5]);
-            tmp1 = (double)((int)tmp / (int)100);
-            mLon = (float)(tmp - (tmp1 * 100.0)) / 60.f + (float)tmp1;
-            if(tokens[6].equals("W")) {
+            tmp1 = (double) ((int) tmp / 100);
+            mLon = (float) (tmp - (tmp1 * 100.0)) / 60.f + (float) tmp1;
+            if (tokens[6].equals("W")) {
                 mLon = -mLon;
             }
             /*
              * Kt to m/s
              */
-            mHorizontalVelocity = (int)(Double.parseDouble(tokens[7]) * 0.514444);
-            mDirection = (int)Double.parseDouble(tokens[8]);
-            
+            mHorizontalVelocity = (int) (Double.parseDouble(tokens[7]) * 0.514444);
+            mDirection = (int) Double.parseDouble(tokens[8]);
+
             Logger.Logit("lat " + mLat + " lon " + mLon + " horzVel " + mHorizontalVelocity +
                     " direction " + mDirection);
 
-        }
-        catch (Exception e) {
-            
+        } catch (Exception e) {
         }
     }
 }

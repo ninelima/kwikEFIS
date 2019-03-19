@@ -17,9 +17,9 @@
 
 package player.efis.data.lib;
 
+import android.app.Activity;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -27,42 +27,26 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Bundle;
 import android.os.Environment;
-/*import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;*/
-import android.util.Log;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ListView;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+/*import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;*/
 //------------------------------
 //import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
-
-
-import android.app.Activity;
-import android.app.ProgressDialog;
-import android.os.Bundle;
-import android.os.Handler;
-import android.widget.Button;
-import android.view.View;
-import android.view.View.OnClickListener;
 //------------------------------
 
 
@@ -79,33 +63,21 @@ public class EFISDataPac extends Activity
         //setContentView(R.layout.activity_kwik_efisdata);
         setContentView(R.layout.main);
 
-        /*
+/*
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View view)
-            {
+        fab.setOnClickListener((View.OnClickListener) view ->
                 Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
+                        .setAction("Action", null).show());
 
-        Button gobutton = (Button) findViewById(R.id.button_go );
-        gobutton.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View view)
-            {
-                DoSomething();
-            }
-        });
+        Button gobutton = (Button) findViewById(R.id.button_go);
+        gobutton.setOnClickListener(view -> DoSomething());
 
         // disable and hide the buttons
         // -- we may use this again in future
         fab.setVisibility(View.GONE);
         gobutton.setVisibility(View.GONE);
-        //*/
+        //
+*/
 
         listAssetFiles("terrain");
     }
@@ -137,7 +109,7 @@ public class EFISDataPac extends Activity
     private boolean listAssetFiles(String path)
     {
 
-        String [] list;
+        String[] list;
         try {
             list = getAssets().list(path);
         }
@@ -155,7 +127,7 @@ public class EFISDataPac extends Activity
         paint.setColor(Color.rgb(173, 214, 255)); // cyanish
         paint.setAlpha(128);
 
-        // overrride what is in the resrource --- for now
+        // override what is in the resource --- for now
         LinearLayout layout = new LinearLayout(this);
         layout.setBackgroundColor(Color.WHITE);
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -178,12 +150,12 @@ public class EFISDataPac extends Activity
         txtView.setTextColor(Color.BLACK);
         txtView.setBackgroundColor(Color.LTGRAY);
 
-        String buff = "\nKwik EFIS Terrain data. Version " + version + "\n\n";
-        for (int i = 0; i < list.length; i++) {
-            buff += list[i] + "\t";
+        StringBuilder buff = new StringBuilder("\nKwik EFIS Terrain data. Version " + version + "\n\n");
+        for (String aList : list) {
+            buff.append(aList).append("\t");
 
-            int x1=0, y1=0, x2, y2;
-            switch (list[i]) {
+            int x1 = 0, y1 = 0, x2, y2;
+            switch (aList) {
                 // top row
                 case "W180N90.DEM":
                     x1 = twidth * 0;
@@ -302,17 +274,16 @@ public class EFISDataPac extends Activity
                     x1 = twidth * 10;
                     y1 = theight * 10;
             }
-            canvas.drawRect(x1, y1, x1+twidth, y1+theight, paint); // test
+            canvas.drawRect(x1, y1, x1 + twidth, y1 + theight, paint); // test
 
         }
-        buff += "\n";
-        txtView.setText(buff);
+        buff.append("\n");
+        txtView.setText(buff.toString());
         layout.addView(txtView);
         layout.addView(imgView);
         setContentView(layout);
         return true;
     }
-
 
     private void copyFile(InputStream in, OutputStream out) throws IOException
     {
@@ -361,8 +332,5 @@ public class EFISDataPac extends Activity
             e.printStackTrace();
         }
         Toast.makeText(this, "Something is done", Toast.LENGTH_SHORT).show();
-
     }
-
-
 }

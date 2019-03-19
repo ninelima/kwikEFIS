@@ -12,19 +12,18 @@ Redistribution and use in source and binary forms, with or without modification,
 package com.stratux.stratuvare.gdl90;
 
 /**
- * 
  * @author zkhan
- *
  */
 public class Decode {
 
     /**
      * The main decode function.
+     *
      * @param bufin Input from receiver
-     * @param lens length of data
+     * @param lens  length of data
      */
     public Message decode(byte[] bufin) {
-                
+
         return MessageFactory.buildMessage(bufin);
     }
 }

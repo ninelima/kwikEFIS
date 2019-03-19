@@ -14,36 +14,33 @@ package com.stratux.stratuvare.gdl90;
 import com.stratux.stratuvare.utils.Logger;
 
 /**
- * 
  * @author zkhan
- *
  */
 public class MessageFactory {
 
-    
     public static Message buildMessage(byte bufin[]) {
-        
+
         int len = bufin.length;
-        
+
         /*
          * Strip flag bytes 0x7E
          */
-        if(len < 5) {
+        if (len < 5) {
             return null;
         }
         byte strp[] = new byte[len - 2];
         System.arraycopy(bufin, 1, strp, 0, len - 2);
-        
+
         /* Check CRC */
         byte[] inbuf = process(strp);
 
-        if(null == inbuf) {
+        if (null == inbuf) {
             /*
              * CRC fail
              */
             return null;
         }
-        
+
         /*
          * Strip type and CRC to get actual data
          */
@@ -56,40 +53,40 @@ public class MessageFactory {
          * Parse now
          */
         Message m = null;
-        switch(type) {
+        switch (type) {
 
             case MessageType.HEARTBEAT:
                 m = new HeartbeatMessage();
                 break;
-                
+
             case MessageType.UPLINK:
                 m = new UplinkMessage();
                 break;
-                
+
             case MessageType.OWNSHIP:
                 m = new OwnshipMessage();
                 break;
-                
-            case MessageType.OWNSHIP_GEOMETRIC_ALTITUDE: 
+
+            case MessageType.OWNSHIP_GEOMETRIC_ALTITUDE:
                 m = new OwnshipGeometricAltitudeMessage();
                 break;
-                
+
             case MessageType.TRAFFIC_REPORT:
                 m = new TrafficReportMessage();
                 break;
-                
+
             case MessageType.BASIC_REPORT:
                 m = new BasicReportMessage();
                 break;
-                
+
             case MessageType.LONG_REPORT:
                 m = new LongReportMessage();
                 break;
-                
+
             case MessageType.DEVICE_REPORT:
                 m = new DeviceReportMessage();
                 break;
-                
+
             default:
                 m = null;
                 break;
@@ -98,15 +95,16 @@ public class MessageFactory {
         /*
          * Parse it.
          */
-        if(null != m) {
+        if (null != m) {
             m.parse(data);
         }
-        return(m);
-        
+        return (m);
+
     }
-    
+
     /**
      * CRC16 process with 0x7D escape remove
+     *
      * @param msg
      * @return
      */
@@ -114,7 +112,7 @@ public class MessageFactory {
         int i = 0;
         int length = 0;
         int len = msg.length;
-        
+
         byte msgCrc[] = new byte[len];
         byte msgChar;
         while (i < len) {
@@ -123,29 +121,28 @@ public class MessageFactory {
              */
             if (msg[i] == 0x7D) {
                 i++;
-                if(i >= len) {
+                if (i >= len) {
                     break;
                 }
-                msgChar = (byte)(msg[i] ^ 0x20);
+                msgChar = (byte) (msg[i] ^ 0x20);
                 msgCrc[length] = msgChar;
-            }
-            else {
+            } else {
                 msgCrc[length] = msg[i];
             }
             length++;
             i++;
         }
-        
-        if(length < 2) {
+
+        if (length < 2) {
             return null;
         }
         /*
          *  exclude CRC in CRC compute
          */
-        int msb = ((int)msgCrc[length - 1]) & 0xFF;
-        int lsb = ((int)msgCrc[length - 2]) & 0xFF;
+        int msb = ((int) msgCrc[length - 1]) & 0xFF;
+        int lsb = ((int) msgCrc[length - 2]) & 0xFF;
         int inCrc = (msb << 8) + lsb;
-        if(!Crc.checkCrc(msgCrc, length - 2, inCrc)) {
+        if (!Crc.checkCrc(msgCrc, length - 2, inCrc)) {
             Logger.Logit("CRC failed");
             return null;
         }
@@ -157,7 +154,6 @@ public class MessageFactory {
         System.arraycopy(msgCrc, 0, ret, 0, length);
         return ret;
     }
-    
-    
-    
+
+
 }

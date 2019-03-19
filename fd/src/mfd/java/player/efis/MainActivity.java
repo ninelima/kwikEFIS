@@ -55,9 +55,11 @@ import player.ulib.UMath;
 import player.ulib.UNavigation;
 import player.ulib.UTrig;
 import player.ulib.Unit;
+import player.ulib.Unit.Feet;
 
 
-public class MainActivity extends EFISMainActivity implements Listener, SensorEventListener, LocationListener
+public class MainActivity extends EFISMainActivity
+        implements Listener, SensorEventListener, LocationListener
 {
     public static final String PREFS_NAME = R.string.app_name + ".prefs";
     private SurfaceView mGLView;
@@ -84,7 +86,8 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
     @Override
     public void onBackPressed()
     {
-        if (mGLView.mRenderer.fatFingerActive == true) {
+        if (mGLView.mRenderer.fatFingerActive)
+        {
             mGLView.mRenderer.fatFingerActive = false;
             mGLView.mRenderer.setSpinnerParams();
         }
@@ -108,7 +111,7 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
                 break;
             case R.id.quit:
                 // Quit the app
-                if (bLockedMode == false) {
+                if (!bLockedMode) {
                     finish();
                     //System.exit(0); // This is brutal, it does not exit gracefully
                 }
@@ -126,7 +129,7 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event)
     {
-        /*
+/*
         if ((keyCode == KeyEvent.KEYCODE_VOLUME_UP)) {
             mGLView.setAutoZoomActive(false);
             mGLView.zoomIn();
@@ -137,7 +140,7 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
             mGLView.zoomOut();
             return true;
         }
-        */
+*/
         return super.onKeyDown(keyCode, event);
     }
 
@@ -185,7 +188,7 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
         provider = LocationManager.GPS_PROVIDER;  // Always use the GPS as the provide
         locationManager.requestLocationUpdates(provider, GPS_UPDATE_PERIOD, GPS_UPDATE_DISTANCE, this);  // 400ms or 1m
         locationManager.addGpsStatusListener(this);
-        //locationManager.addNmeaListener(this);
+        //locationManager.addNameListener(this);
         Location location = locationManager.getLastKnownLocation(provider);
         // end location
 
@@ -223,7 +226,6 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
         mGLView.setServiceableDevice();
         updateEFIS();
     }
-
 
     @Override
     protected void onStop()
@@ -332,7 +334,7 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
                 break;
 
             case Sensor.TYPE_PRESSURE:
-                // altitude = mSensorManager.getAltitude(SensorManager.PRESSURE_STANDARD_ATMOSPHERE, event.values[0]);
+                // altitude = SensorManager.getAltitude(SensorManager.PRESSURE_STANDARD_ATMOSPHERE, event.values[0]);
                 break;
         }
         updateEFIS();
@@ -389,7 +391,6 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
     public void onStatusChanged(String provider, int status, Bundle extras)
     {
         if (!LocationManager.GPS_PROVIDER.equals(provider)) {
-            return;
         }
         // do something
     }
@@ -401,21 +402,27 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
     //
     public void registerSensorManagerListeners()
     {
-        mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), mSensorManager.SENSOR_DELAY_UI); //SENSOR_DELAY_FASTEST);
-        mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE), mSensorManager.SENSOR_DELAY_UI); //SENSOR_DELAY_FASTEST);
+        mSensorManager.registerListener(this,
+                mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+                SensorManager.SENSOR_DELAY_UI); //SENSOR_DELAY_FASTEST);
+        mSensorManager.registerListener(this,
+                mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE),
+                SensorManager.SENSOR_DELAY_UI); //SENSOR_DELAY_FASTEST);
     }
 
     public void unregisterSensorManagerListeners()
     {
-        mSensorManager.unregisterListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)); //SENSOR_DELAY_FASTEST);
-        mSensorManager.unregisterListener(this, mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE));     //SENSOR_DELAY_FASTEST);
+        mSensorManager.unregisterListener(this,
+                mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)); //SENSOR_DELAY_FASTEST);
+        mSensorManager.unregisterListener(this,
+                mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)); //SENSOR_DELAY_FASTEST);
     }
 
     // Release the media player
     private void releaseMediaPlayer()
     {
-        mpCautionTerrian.stop();
-        mpCautionTerrian.release();
+        mpCautionTerrain.stop();
+        mpCautionTerrain.release();
 
         mpCautionTraffic.stop();
         mpCautionTraffic.release();
@@ -424,8 +431,8 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
     // Create the media player
     private void createMediaPlayer()
     {
-        mpCautionTerrian = MediaPlayer.create(this, R.raw.caution_terrain);
-        mpCautionTerrian.setLooping(false);
+        mpCautionTerrain = MediaPlayer.create(this, R.raw.caution_terrain);
+        mpCautionTerrain.setLooping(false);
 
         mpCautionTraffic = MediaPlayer.create(this, R.raw.traffic);
         mpCautionTraffic.setLooping(false);
@@ -452,7 +459,7 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
         editor.putInt("colorTheme", colorTheme);
 
         // Commit the edits
-        editor.commit();
+        editor.apply();
     }
 
     private void restorePersistentSettings()
@@ -479,7 +486,6 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
         bLandscapeMode = settings.getBoolean("landscapeMode", false);
     }
 
-
     // This must be implemented otherwise the older
     // systems does not get seem to get updates.
     @Override
@@ -487,7 +493,6 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
     {
         setGpsStatus();
     }
-
 
     @Override
     public void onProviderEnabled(String provider)
@@ -544,7 +549,7 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
         bStratuxActive = settings.getBoolean("stratuxActive", false);
         bHudMode = settings.getBoolean("displayMirror", false);
 
-        // If the aircraft is changed, update the paramaters
+        // If the aircraft is changed, update the parameters
         String s = settings.getString("AircraftModel", "RV8");
         AircraftData.setAircraftData(s); //mGLView.mRenderer.setAircraftData(s);  // refactored  to static model
 
@@ -639,7 +644,6 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
             else sensorComplementaryFilter.setOrientation(orientation_t.VERTICAL_PORTRAIT);
         }
 
-
         //
         // Check if we have a valid GPS
         //
@@ -655,7 +659,6 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
         // end debug
         return true;
     }
-
 
 
     //-------------------------------------------------------------------------
@@ -685,7 +688,7 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
             hasSpeed = true;
         }
         else {
-            // Clear the simulator spash
+            // Clear the simulator splash
             mGLView.setSimulatorActive(false, " ");
 
             // Handle Stratux or Android sensors
@@ -727,8 +730,8 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
         if (ctr % 100 == 0) {
             // See if we are close to the edge or
             // see if we are stuck on null island or even on the tile
-            if ((dem_dme + DemGTOPO30.DEM_HORIZON > DemGTOPO30.BUFX / 4) ||
-                    ((dem_dme != 0) && (mDemGTOPO30.isOnTile(gps_lat, gps_lon) == false))) {
+            if ((dem_dme + DemGTOPO30.DEM_HORIZON > DemGTOPO30.BUFX / 4)
+                    || ((dem_dme != 0) && (!mDemGTOPO30.isOnTile(gps_lat, gps_lon)))) {
 
                 mGLView.setBannerMsg(true, "LOADING TERRAIN");
                 mDemGTOPO30.loadDemBuffer(gps_lat, gps_lon);
@@ -740,18 +743,6 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
             }
             //ctr = 0;
         }
-
-
-        // for debug - set to true
-        if (false) {
-            hasGps = true;          //debug
-            hasSpeed = true;        //debug
-            gps_speed = 3;//60;     //m/s debug
-            gps_rateOfClimb = 1.0f; //m/s debug
-            gps_course = (float) Math.toRadians(1); // debug
-        }
-        // end debug
-
 
         //
         // Pass the values to mGLView for updating
@@ -793,7 +784,7 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
                     if ((gps_speed > AircraftData.Vx / 2)  // m/s
                             && (gps_agl > 0)
                             && (gps_agl < 100)) { // meters
-                        if (!mpCautionTerrian.isPlaying()) mpCautionTerrian.start();
+                        if (!mpCautionTerrain.isPlaying()) mpCautionTerrain.start();
                     } // caution terrain
                 } // DemGTOPO30 required options
 
@@ -812,11 +803,12 @@ public class MainActivity extends EFISMainActivity implements Listener, SensorEv
         pitchValue = -sensorComplementaryFilter.getPitch();
         rollValue = -sensorComplementaryFilter.getRoll();
 
-        pitchValue = 0.125f * (float) Math.random() - 0.75f * UMath.clamp(gps_agl - Unit.Feet.toMeter(target_agl), -3, 3);
+        pitchValue = 0.125f * (float) Math.random() - 0.75f * UMath.clamp(
+                gps_agl - Feet.toMeter(target_agl),
+                -3,
+                3);
         rollValue = 1.125f * (float) Math.random() + 0.75f * mGLView.mRenderer.commandRoll;
 
         super.Simulate();
     }
 }
-
-

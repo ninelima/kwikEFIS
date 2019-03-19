@@ -1,10 +1,12 @@
 package player.efis.common;
 
 import android.os.AsyncTask;
-import android.util.Log;
+
 import com.stratux.stratuvare.utils.Logger;
+
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -15,28 +17,21 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.LinkedList;
 import java.util.concurrent.Semaphore;
+
 import player.ulib.UTime;
-import player.ulib.Unit;
 
 public class StratuxWiFiTask extends AsyncTask<String, Void, Void>
 {
     protected static final int CONNECTED = 1;
     protected static final int CONNECTING = 2;
     protected static final int DISCONNECTED = 0;
-
-    private boolean mRunning;
-
-    DatagramSocket mSocket;
-    private int mPort = 4000;
-    private int mState;
-
+    static Semaphore mutex = new Semaphore(1, true);
+    private static boolean bCageAhrs = false;
     // Public Stratux vars
     public long StratuxTimeStamp;
-
     public int GPSSatellites;
     public int GPSSatellitesTracked;
     public int GPSSatellitesSeen;
-
     public double AHRSPitch;
     public double AHRSRoll;
     public double AHRSGyroHeading;
@@ -47,26 +42,98 @@ public class StratuxWiFiTask extends AsyncTask<String, Void, Void>
     public double AHRSGLoadMin;
     public double AHRSGLoadMax;
     public int AHRSStatus;
-
     public double GPSLongitude;
     public double GPSLatitude;
     public double GPSAltitudeMSL;
     public double GPSTrueCourse;
     public double GPSTurnRate;
     public double GPSGroundSpeed;
-
     public double BaroTemperature;
     public double BaroPressureAltitude;
     public double BaroVerticalSpeed;
     //public String BaroLastMeasurementTime;
     public boolean proximityAlert;// = false;
-
+    DatagramSocket mSocket;
+    private boolean mRunning;
+    private int mPort = 4000;
+    private int mState;
     private String id;
+    private LinkedList<String> trafficList = new LinkedList<>();
+    private boolean mGpsPositionValid;
+    private boolean mBatteryLow;
+    private boolean mDeviceRunning;
 
     public StratuxWiFiTask(String id)
     {
         this.id = id;
         mState = DISCONNECTED;
+    }
+
+    private static void doSleep(int ms)
+    {
+        // Wait ms milliseconds
+        try {
+            Thread.sleep(ms);
+        }
+        catch (Exception ignored) {
+        }
+    }
+
+    public static void doCageAhrs()
+    {
+        // Wait ms milliseconds
+        bCageAhrs = true;
+    }
+
+    private static String postHttp(String addr)
+    {
+        return doHttp(addr, "POST");
+    }
+
+    private static String doHttp(String addr, String method)
+    {
+        URL url;
+        StringBuilder response = new StringBuilder();
+        try {
+            url = new URL(addr);
+        }
+        catch (MalformedURLException e) {
+            throw new IllegalArgumentException("invalid url");
+        }
+
+        HttpURLConnection conn = null;
+        try {
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setDoOutput(false);
+            conn.setDoInput(true);
+            conn.setUseCaches(false);
+            conn.setRequestMethod(method); //"GET"
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8");
+
+            // handle the response
+            int status = conn.getResponseCode();
+            if (status != 200) {
+                throw new IOException("Post failed with error code " + status);
+            }
+            else {
+                BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                String inputLine;
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                in.close();
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        finally {
+            if (conn != null) {
+                conn.disconnect();
+            }
+            //Here is your json in string format
+            return response.toString();
+        }
     }
 
     protected Void doInBackground(String... urls)
@@ -82,15 +149,12 @@ public class StratuxWiFiTask extends AsyncTask<String, Void, Void>
         // TODO: do something with the feed
     }
 
-    static Semaphore mutex = new Semaphore(1, true);
-    private LinkedList<String> trafficList = new LinkedList<String>();
-
     LinkedList<String> getTargetList()
     {
         try {
             mutex.acquire();
             try {
-                return new LinkedList<String>(trafficList);
+                return new LinkedList<>(trafficList);
             }
             finally {
                 mutex.release();
@@ -101,10 +165,6 @@ public class StratuxWiFiTask extends AsyncTask<String, Void, Void>
             return null;
         }
     }
-
-    private boolean mGpsPositionValid;
-    private boolean mBatteryLow;
-    private boolean mDeviceRunning;
 
     public boolean isGpsValid()
     {
@@ -140,24 +200,6 @@ public class StratuxWiFiTask extends AsyncTask<String, Void, Void>
         }
     }
 
-    private static void doSleep(int ms)
-    {
-        // Wait ms milliseconds
-        try {
-            Thread.sleep(ms);
-        }
-        catch (Exception e) {
-        }
-    }
-
-    private static boolean bCageAhrs = false;
-    public static void doCageAhrs()
-    {
-        // Wait ms milliseconds
-        bCageAhrs = true;
-    }
-
-
     private void mainExecutionLoop()
     {
         byte[] buffer = new byte[8192];
@@ -167,7 +209,7 @@ public class StratuxWiFiTask extends AsyncTask<String, Void, Void>
         // This state machine will keep trying to connect to
         // ADBS/GPS receiver
         //
-        while (mRunning == true) {
+        while (mRunning) {
             if (bCageAhrs) {
                 bCageAhrs = false;
                 calibrateAhrs();
@@ -254,7 +296,7 @@ public class StratuxWiFiTask extends AsyncTask<String, Void, Void>
                                     deltaT = unixTime - jt.getLong("time");
 
                                     if ((jt.getInt("address") == js.getInt("address"))
-                                          || (deltaT > 20 * 1000)) {
+                                            || (deltaT > 20 * 1000)) {
                                         trafficList.remove(i);
                                     }
                                 }
@@ -390,60 +432,6 @@ public class StratuxWiFiTask extends AsyncTask<String, Void, Void>
         return doHttp(addr, "GET");
     }
 
-    private static String postHttp(String addr)
-    {
-        return doHttp(addr, "POST");
-    }
-
-
-    private static String doHttp(String addr, String method)
-    {
-        URL url;
-        StringBuffer response = new StringBuffer();
-        try {
-            url = new URL(addr);
-        }
-        catch (MalformedURLException e) {
-            throw new IllegalArgumentException("invalid url");
-        }
-
-        HttpURLConnection conn = null;
-        try {
-            conn = (HttpURLConnection) url.openConnection();
-            conn.setDoOutput(false);
-            conn.setDoInput(true);
-            conn.setUseCaches(false);
-            conn.setRequestMethod(method); //"GET"
-            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8");
-
-            // handle the response
-            int status = conn.getResponseCode();
-            if (status != 200) {
-                throw new IOException("Post failed with error code " + status);
-            }
-            else {
-                BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                String inputLine;
-                while ((inputLine = in.readLine()) != null) {
-                    response.append(inputLine);
-                }
-                in.close();
-            }
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-        finally {
-            if (conn != null) {
-                conn.disconnect();
-            }
-            //Here is your json in string format
-            String responseJSON = response.toString();
-            return responseJSON;
-        }
-    }
-
-
     public boolean connect(String to, boolean secure)
     {
         try {
@@ -467,7 +455,6 @@ public class StratuxWiFiTask extends AsyncTask<String, Void, Void>
         return true; //connectConnection();
     }
 
-
     public String getParam()
     {
         return Integer.toString(mPort);
@@ -486,7 +473,6 @@ public class StratuxWiFiTask extends AsyncTask<String, Void, Void>
         }
     }
 
-
     public void finish()
     {
         mRunning = false;
@@ -501,9 +487,7 @@ public class StratuxWiFiTask extends AsyncTask<String, Void, Void>
     {
         return !mRunning;
     }
-
 }
-
 
     /*{
         "GPSLastFixSinceMidnightUTC": 67337.6,
@@ -549,32 +533,33 @@ public class StratuxWiFiTask extends AsyncTask<String, Void, Void>
     */
 
 /*
-    protected RSSFeed doInBackground(String... urls) {
-    {
-        try {
-            URL url = new URL(urls[0]);
-            SAXParserFactory factory = SAXParserFactory.newInstance();
-            SAXParser parser = factory.newSAXParser();
-            XMLReader xmlreader = parser.getXMLReader();
-            RssHandler theRSSHandler = new RssHandler();
-            xmlreader.setContentHandler(theRSSHandler);
-            InputSource is = new InputSource(url.openStream());
-            xmlreader.parse(is);
+    protected RSSFeed doInBackground(String... urls)
+        {
+            try {
+                URL url = new URL(urls[0]);
+                SAXParserFactory factory = SAXParserFactory.newInstance();
+                SAXParser parser = factory.newSAXParser();
+                XMLReader xmlreader = parser.getXMLReader();
+                RssHandler theRSSHandler = new RssHandler();
+                xmlreader.setContentHandler(theRSSHandler);
+                InputSource is = new InputSource(url.openStream());
+                xmlreader.parse(is);
 
-            return theRSSHandler.getFeed();
-        } catch (Exception e) {
-            this.exception = e;
+                return theRSSHandler.getFeed();
+            } catch (Exception e) {
+                this.exception = e;
 
-            return null;
-        } finally {
-            is.close();
+                return null;
+            } finally {
+                is.close();
+            }
         }
-    }
 
-    protected void onPostExecute(RSSFeed feed) {
-        // TODO: check this.exception
-        // TODO: do something with the feed
-    }
+        protected void onPostExecute (RSSFeed feed)
+        {
+            // TODO: check this.exception
+            // TODO: do something with the feed
+        }
 */
 
                     /*-------------------------------------

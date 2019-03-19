@@ -11,29 +11,26 @@ Redistribution and use in source and binary forms, with or without modification,
 */
 package com.stratux.stratuvare.nmea;
 
+import android.hardware.GeomagneticField;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import android.hardware.GeomagneticField;
-
 /**
- * 
  * @author zkhan
- *
  */
 public class RMCPacket extends Packet {
-    
+
     public RMCPacket(long time, double latitude, double longitude, double speed, double bearing) {
         mPacket = "$GPRMC,";
-        
-        
+
         /*
          * Variation
          */
-        GeomagneticField gmf = new GeomagneticField((float)latitude, 
-                (float)longitude, 0, time);
+        GeomagneticField gmf = new GeomagneticField((float) latitude,
+                (float) longitude, 0, time);
         double dec = -gmf.getDeclination();
 
         /*
@@ -43,59 +40,57 @@ public class RMCPacket extends Packet {
         SimpleDateFormat sdf = new SimpleDateFormat("HHmmss", Locale.US);
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         mPacket += sdf.format(date) + ",";
-        
+
         mPacket += "A,";
 
         /*
          * Put latitude
          */
-        if(latitude > 0) {
+        if (latitude > 0) {
             int lat;
             double deg;
-            
-            lat = (int)latitude;
-            deg = (latitude - (double)lat) * 60.0;
-            
+
+            lat = (int) latitude;
+            deg = (latitude - (double) lat) * 60.0;
+
             mPacket += String.format("%02d", lat);
             mPacket += String.format("%06.3f", deg);
             mPacket += ",N,";
-        }
-        else {
+        } else {
             int lat;
             double deg;
             latitude = -latitude;
-            lat = (int)latitude;
-            deg = (latitude - (double)lat) * 60.0;
-            
+            lat = (int) latitude;
+            deg = (latitude - (double) lat) * 60.0;
+
             mPacket += String.format("%02d", lat);
             mPacket += String.format("%06.3f", deg);
-            mPacket += ",S,";            
+            mPacket += ",S,";
         }
 
         /*
          * Put longitude
          */
-        if(longitude > 0) {
+        if (longitude > 0) {
             int lon;
             double deg;
-            
-            lon = (int)longitude;
-            deg = (longitude - (double)lon) * 60.0;
-            
+
+            lon = (int) longitude;
+            deg = (longitude - (double) lon) * 60.0;
+
             mPacket += String.format("%03d", lon);
             mPacket += String.format("%06.3f", deg);
             mPacket += ",E,";
-        }
-        else {
+        } else {
             int lon;
             double deg;
             longitude = -longitude;
-            lon = (int)longitude;
-            deg = (longitude - (double)lon) * 60.0;
-            
+            lon = (int) longitude;
+            deg = (longitude - (double) lon) * 60.0;
+
             mPacket += String.format("%03d", lon);
             mPacket += String.format("%06.3f", deg);
-            mPacket += ",W,";            
+            mPacket += ",W,";
         }
 
         /*
@@ -116,23 +111,19 @@ public class RMCPacket extends Packet {
         sdf = new SimpleDateFormat("ddMMyy", Locale.US);
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         mPacket += sdf.format(date) + ",";
-        
 
         /*
          * Put variation
          */
-        if(dec < 0) {
+        if (dec < 0) {
             dec = -dec;
             mPacket += String.format("%05.1f", dec);
             mPacket += ",E";
-        }
-        else {
+        } else {
             mPacket += String.format("%05.1f", dec);
-            mPacket += ",W";            
+            mPacket += ",W";
         }
-      
-        assemble();
-        
-    }
 
+        assemble();
+    }
 }

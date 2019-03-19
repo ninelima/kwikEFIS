@@ -10,60 +10,57 @@ Redistribution and use in source and binary forms, with or without modification,
     *     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package com.stratux.stratuvare.nmea;
+
 import java.util.LinkedList;
 
 /**
- * 
  * @author zkhan
- *
+ * <p>
  * Accumulates Decode messages, joins fragments.
- *
  */
 public class DataBuffer {
-    
+
     int mSize;
     int mElem;
     byte mBuffer[];
     byte mBuffer2[];
     LinkedList<Integer> mIndexes;
-    
+
     /**
-     * 
      * @param size
      */
     public DataBuffer(int size) {
         mSize = size;
-        mIndexes = new LinkedList<Integer>();
+        mIndexes = new LinkedList<>();
         mElem = 0;
         mBuffer = new byte[size];
         mBuffer2 = new byte[size];
     }
-    
+
     /**
-     * 
+     *
      */
     private void flush() {
         mElem = 0;
         mIndexes.clear();
     }
-    
+
     /**
-     * 
+     *
      */
     private void compute() {
         mIndexes.clear();
-        for(int i = 0; i < mElem - 2; i++) {
+        for (int i = 0; i < mElem - 2; i++) {
             /*
              * Look for $
              */
-            if(mBuffer[i] == (byte)36) {
+            if (mBuffer[i] == (byte) 36) {
                 mIndexes.add(i);
             }
-        }        
+        }
     }
-    
+
     /**
-     * 
      * @param len
      * @return
      */
@@ -72,7 +69,7 @@ public class DataBuffer {
         System.arraycopy(mBuffer, 0, buffer, 0, len);
         mElem -= len;
         System.arraycopy(mBuffer, len, mBuffer2, 0, mElem);
-        
+
         byte tmp[] = mBuffer;
         mBuffer = mBuffer2;
         mBuffer2 = tmp;
@@ -82,58 +79,53 @@ public class DataBuffer {
     }
 
     /**
-     * 
      * @return
      */
     private int getNext() {
-        if(mIndexes.isEmpty()) {
+        if (mIndexes.isEmpty()) {
             return -1;
         }
         return mIndexes.remove();
     }
-    
+
     /**
-     * 
      * @return
      */
     public byte[] get() {
         int beg = getNext();
-        
-        if(beg < 0) {
+
+        if (beg < 0) {
             /*
              * Empty, or bad data. No $GP in it.
              */
             flush();
             return null;
-        }
-        else if(beg > 0) {
+        } else if (beg > 0) {
             /*
              * Bad data. Mid stream. Move to first $GP
              */
             getAtBegin(beg);
             beg = getNext();
         }
-        
+
         int end = getNext();
-        if(end < 0) {
+        if (end < 0) {
             /*
              * Not complete yet. Wait for complete packet
              */
             return null;
         }
-        
-        byte buf[] = getAtBegin(end - beg);
-        return buf;
+
+        return getAtBegin(end - beg);
 
     }
-        
+
     /**
-     * 
      * @param data
      * @param len
      */
     public void put(byte data[], int len) {
-        if((mElem + len) >= mBuffer.length) {
+        if ((mElem + len) >= mBuffer.length) {
             /*
              * Something wrong.
              */
@@ -144,5 +136,4 @@ public class DataBuffer {
         mElem += len;
         compute();
     }
-    
 }

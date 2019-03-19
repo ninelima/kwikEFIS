@@ -16,73 +16,69 @@
 
 package player.efis.common;
 
+import android.hardware.SensorManager;
+
 import java.util.Timer;
 import java.util.TimerTask;
-import android.hardware.SensorManager;
+
 import player.ulib.DigitalFilter;
 
 public class SensorComplementaryFilter
 {
-	private final float ALPHA = 0.998f;  //0.98f is the default 
-	orientation_t orientation = orientation_t.VERTICAL_LANDSCAPE;
+    private final static float dt = 0.01f;    // 10 ms sample rate
+    public static final int TIME_CONSTANT = (int) (dt * 1000);
+    private final float ACCELEROMETER_SENSITIVITY = 1.0f;
+    private final float GYROSCOPE_SENSITIVITY = 1.0f;
+    orientation_t orientation = orientation_t.VERTICAL_LANDSCAPE;
+    float[] accData = {0, 0, 0};
+    float[] gyrData = {0, 0, 0};
+    //
+    // Calculate augmented bank angle given rate of turn and velocity
+    //
+    DigitalFilter filterRollAcc = new DigitalFilter(32); //4
+    private float M_PI = 3.14159265359f;
+    private float pitch;
+    private float roll;
+    private float pitchAcc, rollAcc;
+    private float loadfactor;
 
-	private final float ACCELEROMETER_SENSITIVITY = 1.0f; 
-	private final float GYROSCOPE_SENSITIVITY = 1.0f;   
-	 
-	private float M_PI = 3.14159265359f;	    
-	 
-	private final static float dt = 0.01f;	// 10 ms sample rate    
-	public static final int TIME_CONSTANT = (int) (dt*1000); 
-	
-	private float pitch; 
-	private float roll;
-	
-	private float pitchAcc, rollAcc; 
-	private float loadfactor;             
-	
-	float[] accData = {0,0,0}; 
-	float[] gyrData = {0,0,0};
-	
-	private Timer complTimer = new Timer(); 
-	
-	public SensorComplementaryFilter()
-	{
-		// wait for two second until gyroscope and magnetometer/accelerometer
-		// data is initialised then schedule the complementary filter task
-		complTimer.scheduleAtFixedRate(new calculateFilterTask(), 2000, TIME_CONSTANT);
-	}
+    public SensorComplementaryFilter()
+    {
+        // wait for two second until gyroscope and magnetometer/accelerometer
+        // data is initialised then schedule the complementary filter task
+        Timer complTimer = new Timer();
+        complTimer.scheduleAtFixedRate(new calculateFilterTask(), 2000, TIME_CONSTANT);
+    }
 
-	public void setOrientation(orientation_t ori)
-	{
-		orientation = ori;
-	}
-	
-	public void setAccel(float[] sensorValues)
-	{
-		System.arraycopy(sensorValues, 0, accData, 0, 3);
-		loadfactor = (float) Math.sqrt(accData[0]*accData[0] + accData[1]*accData[1] + accData[2]*accData[2]) / SensorManager.GRAVITY_EARTH;
-	}
+    public void setOrientation(orientation_t ori)
+    {
+        orientation = ori;
+    }
 
-	public void getAccel(float[] sensorValues)
-	{
-		System.arraycopy(accData, 0, sensorValues, 0, 3);
-	}
+    public void setAccel(float[] sensorValues)
+    {
+        System.arraycopy(sensorValues, 0, accData, 0, 3);
+        loadfactor = (float) Math.sqrt(accData[0] * accData[0] + accData[1] * accData[1] + accData[2] * accData[2]) / SensorManager.GRAVITY_EARTH;
+    }
 
-	public void setGyro(float[] sensorValues)
-	{
-		System.arraycopy(sensorValues, 0, gyrData, 0, 3);
-	}
-	
-	public void getGyro(float[] sensorValues)
-	{
-		System.arraycopy(gyrData, 0, sensorValues, 0, 3);
-	}
-	
-	
-	public float getPitch()
-	{
-		return pitch;
-	}
+    public void getAccel(float[] sensorValues)
+    {
+        System.arraycopy(accData, 0, sensorValues, 0, 3);
+    }
+
+    public void setGyro(float[] sensorValues)
+    {
+        System.arraycopy(sensorValues, 0, gyrData, 0, 3);
+    }
+
+    public void getGyro(float[] sensorValues)
+    {
+        System.arraycopy(gyrData, 0, sensorValues, 0, 3);
+    }
+
+    public float getPitch() {
+        return pitch;
+    }
 
     public float getPitchRate()
     {
@@ -98,41 +94,35 @@ public class SensorComplementaryFilter
         }
     }
 
+    public float getRoll()
+    {
+        return roll;
+    }
 
-	public float getRoll()
-	{
-		return roll;
-	}
+    public float getPitchAcc()
+    {
+        return pitchAcc;
+    }
 
-	public float getPitchAcc()
-	{
-		return pitchAcc;
-	}
+    public float getRollAcc()
+    {
+        return rollAcc;
+    }
 
-	public float getRollAcc()
-	{
-		return rollAcc;
-	}
-	
-	public float getLoadFactor()
-	{
-		return loadfactor;
-	}
+    public float getLoadFactor()
+    {
+        return loadfactor;
+    }
 
-	public void primePitch()
-	{
-		pitch = pitchAcc;
-	}
+    public void primePitch()
+    {
+        pitch = pitchAcc;
+    }
 
-	public void primeRoll()
-	{
-		roll = rollAcc;
-	}
-
-	//
-	// Calculate augmented bank angle given rate of turn and velocity
-	//
-	DigitalFilter filterRollAcc = new DigitalFilter(32); //4
+    public void primeRoll()
+    {
+        roll = rollAcc;
+    }
 
     //
     // Utility for calculation of bank based on rate of turn and speed.
@@ -171,65 +161,67 @@ public class SensorComplementaryFilter
     // Free running task implementing  the actual
     // complimentary filter
     class calculateFilterTask extends TimerTask
-	{
-		public void run()
-		{
-			switch (orientation) {
-			case HORIZONTAL_LANDSCAPE:  
-				// Integrate the gyroscope data -> int(angularSpeed) = angle
-				 roll += (gyrData[0] * 180 / M_PI) * dt;   // Angle around the X-axis
-				 pitch -= (gyrData[1] * 180 / M_PI) * dt;  // Angle around the Y-axis 
+    {
+        public void run()
+        {
+            //0.98f is the default
+            float ALPHA = 0.998f;
+            switch (orientation) {
+                case HORIZONTAL_LANDSCAPE:
+                    // Integrate the gyroscope data -> int(angularSpeed) = angle
+                    roll += (gyrData[0] * 180 / M_PI) * dt;   // Angle around the X-axis
+                    pitch -= (gyrData[1] * 180 / M_PI) * dt;  // Angle around the Y-axis
 
-				// Turning around the X axis results in a vector on the Y-axis
-				rollAcc = (float) (Math.atan2((float)accData[1], (float)accData[2]) * 180 / M_PI);
-				roll = roll * ALPHA +  rollAcc * (1 - ALPHA); 
+                    // Turning around the X axis results in a vector on the Y-axis
+                    rollAcc = (float) (Math.atan2(accData[1], accData[2]) * 180 / M_PI);
+                    roll = roll * ALPHA + rollAcc * (1 - ALPHA);
 
-				// Turning around the Y axis results in a vector on the X-axis
-				pitchAcc = (float) (Math.atan2((float)accData[0], (float)accData[2]) * 180 / M_PI);
-				pitch = pitch * ALPHA + pitchAcc * (1 - ALPHA);
-				break;
+                    // Turning around the Y axis results in a vector on the X-axis
+                    pitchAcc = (float) (Math.atan2(accData[0], accData[2]) * 180 / M_PI);
+                    pitch = pitch * ALPHA + pitchAcc * (1 - ALPHA);
+                    break;
 
-			case VERTICAL_LANDSCAPE: 
-				// Integrate the gyroscope data -> int(angularSpeed) = angle
-				roll  += (gyrData[2] * 180 / M_PI) * dt;  // Angle around the Z-axis
-				pitch += (gyrData[1] * 180 / M_PI) * dt;  // Angle around the Y-axis
+                case VERTICAL_LANDSCAPE:
+                    // Integrate the gyroscope data -> int(angularSpeed) = angle
+                    roll += (gyrData[2] * 180 / M_PI) * dt;  // Angle around the Z-axis
+                    pitch += (gyrData[1] * 180 / M_PI) * dt;  // Angle around the Y-axis
 
-				// Turning around the Z axis results in a vector on the X-axis
-				rollAcc = (float) - (Math.atan2((float)accData[1], (float)accData[0]) * 180 / M_PI);
-				roll = roll * ALPHA + rollAcc * (1 - ALPHA);
-				
-				// Turning around the X axis results in a vector on the Y-axis
-				pitchAcc = (float) (Math.atan2((float)accData[2], (float)accData[0]) * 180 / M_PI);
-				pitch = pitch * ALPHA + pitchAcc * (1 - ALPHA);
-				break;
-			case VERTICAL_PORTRAIT:
-				// Integrate the gyroscope data -> int(angularSpeed) = angle
-				roll  += (gyrData[2] * 180 / M_PI) * dt;  // Angle around the Z-axis
-				pitch -= (gyrData[0] * 180 / M_PI) * dt;  // Angle around the X-axis
+                    // Turning around the Z axis results in a vector on the X-axis
+                    rollAcc = (float) -(Math.atan2(accData[1], accData[0]) * 180 / M_PI);
+                    roll = roll * ALPHA + rollAcc * (1 - ALPHA);
 
-				// Turning around the Z axis results in a vector on the X-axis
-				rollAcc = (float) + (Math.atan2((float)accData[0], (float)accData[1]) * 180 / M_PI);
-				roll = roll * ALPHA + rollAcc * (1 - ALPHA);
+                    // Turning around the X axis results in a vector on the Y-axis
+                    pitchAcc = (float) (Math.atan2(accData[2], accData[0]) * 180 / M_PI);
+                    pitch = pitch * ALPHA + pitchAcc * (1 - ALPHA);
+                    break;
+                case VERTICAL_PORTRAIT:
+                    // Integrate the gyroscope data -> int(angularSpeed) = angle
+                    roll += (gyrData[2] * 180 / M_PI) * dt;  // Angle around the Z-axis
+                    pitch -= (gyrData[0] * 180 / M_PI) * dt;  // Angle around the X-axis
 
-				// Turning around the X axis results in a vector on the Y-axis
-				pitchAcc = (float) (Math.atan2((float)accData[2], (float)accData[1]) * 180 / M_PI);
-				pitch = pitch * ALPHA + pitchAcc * (1 - ALPHA);
-				break;
-			case HORIZONTAL_PORTRAIT:
-			default:
-				// Integrate the gyroscope data -> int(angularSpeed) = angle
-                roll += ((float)gyrData[1] * 180 / M_PI) * dt;  // Angle around the Y-axis
-				pitch += ((float)gyrData[0] * 180 / M_PI) * dt; // Angle around the X-axis
+                    // Turning around the Z axis results in a vector on the X-axis
+                    rollAcc = (float) +(Math.atan2(accData[0], accData[1]) * 180 / M_PI);
+                    roll = roll * ALPHA + rollAcc * (1 - ALPHA);
 
-                // Turning around the Y axis results in a vector on the X-axis
-                rollAcc = (float) - (Math.atan2((float)accData[0], (float)accData[2]) * 180 / M_PI);
-                roll = roll * ALPHA + rollAcc * (1 - ALPHA);
+                    // Turning around the X axis results in a vector on the Y-axis
+                    pitchAcc = (float) (Math.atan2(accData[2], accData[1]) * 180 / M_PI);
+                    pitch = pitch * ALPHA + pitchAcc * (1 - ALPHA);
+                    break;
+                case HORIZONTAL_PORTRAIT:
+                default:
+                    // Integrate the gyroscope data -> int(angularSpeed) = angle
+                    roll += (gyrData[1] * 180 / M_PI) * dt;  // Angle around the Y-axis
+                    pitch += (gyrData[0] * 180 / M_PI) * dt; // Angle around the X-axis
 
-				// Turning around the X axis results in a vector on the Y-axis
-				pitchAcc = (float) (Math.atan2((float)accData[1], (float)accData[2]) * 180 / M_PI);
-				pitch = pitch * ALPHA + pitchAcc * (1 - ALPHA);
-				break;
-			}
-		}
-	}
+                    // Turning around the Y axis results in a vector on the X-axis
+                    rollAcc = (float) -(Math.atan2(accData[0], accData[2]) * 180 / M_PI);
+                    roll = roll * ALPHA + rollAcc * (1 - ALPHA);
+
+                    // Turning around the X axis results in a vector on the Y-axis
+                    pitchAcc = (float) (Math.atan2(accData[1], accData[2]) * 180 / M_PI);
+                    pitch = pitch * ALPHA + pitchAcc * (1 - ALPHA);
+                    break;
+            }
+        }
+    }
 }
