@@ -1,3 +1,5 @@
+Kwik Electronic Flight Information System for Android. Moved to https://gitlab.com/ninelima/kwikEFIS
+
 # kwikEFIS
 Kwik Electronic Flight Information System for Android.
 
